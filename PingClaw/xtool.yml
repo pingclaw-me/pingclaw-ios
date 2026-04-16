@@ -1,0 +1,5 @@
+version: 1
+bundleID: me.pingclaw.app
+product: PingClaw
+infoPath: PingClaw-Info.plist
+iconPath: AppIcon.png
