@@ -1,15 +1,10 @@
 import CoreLocation
 import Foundation
-#if os(iOS)
-import UIKit
-#endif
 
 struct LocationPayload: Encodable, Sendable {
     let timestamp: String
     let location: LocationCoords
     let activity: String
-    let device_id: String
-    let battery_pct: Int
     // Only present on test pings from Settings > "Send test update" so the
     // server can skip storing them as real location history. Optional so
     // real pings serialize identically to the pre-existing wire format.
@@ -39,8 +34,6 @@ final class APIService {
                 accuracy_metres: location.horizontalAccuracy
             ),
             activity: activity,
-            device_id: storage.deviceId,
-            battery_pct: getBatteryLevel(),
             test: nil
         )
 
@@ -52,8 +45,6 @@ final class APIService {
             timestamp: ISO8601DateFormatter().string(from: Date()),
             location: .init(lat: 0, lng: 0, accuracy_metres: 0),
             activity: "Test",
-            device_id: storage.deviceId,
-            battery_pct: -1,
             test: true
         )
 
@@ -124,15 +115,6 @@ final class APIService {
         }
     }
 
-    private func getBatteryLevel() -> Int {
-        #if os(iOS)
-        UIDevice.current.isBatteryMonitoringEnabled = true
-        let level = UIDevice.current.batteryLevel
-        return level >= 0 ? Int(level * 100) : -1
-        #else
-        return -1
-        #endif
-    }
 }
 
 enum APIError: LocalizedError, Sendable {

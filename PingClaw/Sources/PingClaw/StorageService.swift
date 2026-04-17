@@ -9,7 +9,6 @@ final class StorageService {
         static let updateMode = "update_mode"
         static let serverUrl = "server_url"
         static let isTracking = "is_tracking"
-        static let deviceId = "device_id"
     }
 
     private static let keychainService = "me.pingclaw.app"
@@ -39,15 +38,6 @@ final class StorageService {
     var isTracking: Bool {
         get { defaults.bool(forKey: Keys.isTracking) }
         set { defaults.set(newValue, forKey: Keys.isTracking) }
-    }
-
-    var deviceId: String {
-        if let existing = defaults.string(forKey: Keys.deviceId) {
-            return existing
-        }
-        let id = UUID().uuidString.lowercased()
-        defaults.set(id, forKey: Keys.deviceId)
-        return id
     }
 
     // MARK: - Keychain (pairing token)
@@ -90,15 +80,14 @@ final class StorageService {
         return SecItemDelete(query as CFDictionary) == errSecSuccess
     }
 
-    /// Wipes every piece of user state this app persists — keychain token and
-    /// all UserDefaults keys including the device_id. Used when the user taps
-    /// "Delete All Data" so a subsequent pairing cannot be correlated back to
-    /// the deleted identity.
+    /// Wipes every piece of user state this app persists — keychain token
+    /// and all UserDefaults keys. Used when the user taps "Delete All
+    /// Data" so a subsequent pairing cannot be correlated back to the
+    /// deleted identity.
     func clearAll() {
         deletePairingToken()
         defaults.removeObject(forKey: Keys.updateMode)
         defaults.removeObject(forKey: Keys.serverUrl)
         defaults.removeObject(forKey: Keys.isTracking)
-        defaults.removeObject(forKey: Keys.deviceId)
     }
 }
