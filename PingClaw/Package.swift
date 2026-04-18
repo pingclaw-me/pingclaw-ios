@@ -22,6 +22,9 @@ let package = Package(
                 .copy("Resources/Fonts"),
                 // Apple-required privacy manifest (iOS 17+).
                 .copy("Resources/PrivacyInfo.xcprivacy"),
+                // Branding images for splash and main screens.
+                .copy("Resources/Hero.png"),
+                .copy("Resources/Wordmark.png"),
             ]
         ),
     ]

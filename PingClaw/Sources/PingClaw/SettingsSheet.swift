@@ -10,10 +10,13 @@ struct SettingsSheet: View {
 
     @State private var webCodeLoading = false
     @State private var webCode: String?
+    @State private var webCodeCopied = false
     @State private var selectedMode: UpdateMode = .adaptive
+    @State private var showSignOutConfirm = false
     @State private var showDeleteConfirm = false
     @State private var deleteError: String?
     @State private var showPrivacyPolicy = false
+    @State private var showTermsOfService = false
 
     var body: some View {
         ZStack {
@@ -24,13 +27,13 @@ struct SettingsSheet: View {
                     // Header
                     HStack {
                         Text("Settings")
-                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .font(.system(.title3, design: .rounded, weight: .heavy))
                             .foregroundStyle(Color.pcText)
                             .accessibilityAddTraits(.isHeader)
                         Spacer()
                         Button { dismiss() } label: {
                             Text("Done")
-                                .font(.system(size: 16, weight: .medium))
+                                .font(.body.weight(.medium))
                                 .foregroundStyle(Color.pcAccent)
                         }
                         .accessibilityLabel("Done")
@@ -52,10 +55,10 @@ struct SettingsSheet: View {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Open Dashboard")
-                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                            .font(.system(.body, design: .rounded, weight: .semibold))
                                             .foregroundStyle(Color.pcText)
                                         Text("Opens the web dashboard in your browser, automatically signed in.")
-                                            .font(.system(size: 14))
+                                            .font(.footnote)
                                             .foregroundStyle(Color.pcText2)
                                             .multilineTextAlignment(.leading)
                                     }
@@ -75,20 +78,32 @@ struct SettingsSheet: View {
 
                             // Generate sign-in code
                             if let webCode {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Sign-in code:")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(Color.pcText2)
-                                    Text(webCode)
-                                        .font(.system(size: 28, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(Color.pcAccent)
-                                        .tracking(4)
-                                        .accessibilityLabel("Web login code: \(webCode)")
-                                    Text("Enter this code on any browser. Expires in 5 minutes.")
-                                        .font(.system(size: 12))
-                                        .foregroundStyle(Color.pcText3)
+                                Button {
+                                    #if os(iOS)
+                                    UIPasteboard.general.string = webCode
+                                    #endif
+                                    webCodeCopied = true
+                                    Task {
+                                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                        webCodeCopied = false
+                                    }
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Sign-in code:")
+                                            .font(.footnote)
+                                            .foregroundStyle(Color.pcText2)
+                                        Text(webCode)
+                                            .font(.system(.title, design: .monospaced, weight: .bold))
+                                            .foregroundStyle(Color.pcAccent)
+                                            .tracking(4)
+                                        Text(webCodeCopied ? "Copied!" : "Tap to copy. Expires in 5 minutes.")
+                                            .font(.caption)
+                                            .foregroundStyle(webCodeCopied ? Color.pcAccent : Color.pcText3)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .accessibilityLabel("Web login code: \(webCode)")
+                                .accessibilityHint("Tap to copy to clipboard")
                                 .padding(16)
                             } else {
                                 Button {
@@ -96,10 +111,10 @@ struct SettingsSheet: View {
                                 } label: {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Generate Sign-In Code")
-                                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                            .font(.system(.body, design: .rounded, weight: .semibold))
                                             .foregroundStyle(Color.pcText)
                                         Text("Creates a code you can type into any browser to sign in.")
-                                            .font(.system(size: 14))
+                                            .font(.footnote)
                                             .foregroundStyle(Color.pcText2)
                                             .multilineTextAlignment(.leading)
                                     }
@@ -145,33 +160,52 @@ struct SettingsSheet: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Privacy Settings")
-                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                    .font(.system(.body, design: .rounded, weight: .semibold))
                                     .foregroundStyle(Color.pcText)
                                 Text("Review app privacy details and system permissions.")
-                                    .font(.system(size: 14))
+                                    .font(.footnote)
                                     .foregroundStyle(Color.pcText2)
                                     .multilineTextAlignment(.leading)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(16)
                         }
-                        .accessibilityLabel("Privacy Settings")
+                        .accessibilityLabel("Privacy Policy")
                         .accessibilityHint("Opens the privacy policy in a browser")
+
+                        Divider().overlay(Color.pcBorder).padding(.leading, 16)
+
+                        // Terms of Service
+                        Button {
+                            showTermsOfService = true
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Terms of Service")
+                                    .font(.system(.body, design: .rounded, weight: .semibold))
+                                    .foregroundStyle(Color.pcText)
+                                Text("Review the terms and conditions of use.")
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.pcText2)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                        }
+                        .accessibilityLabel("Terms of Service")
+                        .accessibilityHint("Opens the terms of service in a browser")
 
                         Divider().overlay(Color.pcBorder).padding(.leading, 16)
 
                         // Sign out (local only — clears keychain token)
                         Button {
-                            locationManager.stopTracking()
-                            storage.clearAll()
-                            dismiss()
+                            showSignOutConfirm = true
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Sign Out")
-                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                    .font(.system(.body, design: .rounded, weight: .semibold))
                                     .foregroundStyle(Color.pcWarning)
                                 Text("Clears your pairing token from this device. Your server account is not deleted.")
-                                    .font(.system(size: 14))
+                                    .font(.footnote)
                                     .foregroundStyle(Color.pcText2)
                                     .multilineTextAlignment(.leading)
                             }
@@ -189,10 +223,10 @@ struct SettingsSheet: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Delete All Data")
-                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                    .font(.system(.body, design: .rounded, weight: .semibold))
                                     .foregroundStyle(Color.pcError)
                                 Text("Permanently delete your account and all stored data.")
-                                    .font(.system(size: 14))
+                                    .font(.footnote)
                                     .foregroundStyle(Color.pcText2)
                                     .multilineTextAlignment(.leading)
                             }
@@ -216,12 +250,28 @@ struct SettingsSheet: View {
         .preferredColorScheme(.dark)
         #if os(iOS)
         .sheet(isPresented: $showPrivacyPolicy) {
-            if let url = URL(string: "\(storage.serverUrl)/privacypolicy") {
+            if let url = URL(string: "\(storage.serverUrl)/privacypolicy?embedded=1") {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
+        }
+        .sheet(isPresented: $showTermsOfService) {
+            if let url = URL(string: "\(storage.serverUrl)/termsofservice?embedded=1") {
                 SafariView(url: url)
                     .ignoresSafeArea()
             }
         }
         #endif
+        .alert("Sign Out?", isPresented: $showSignOutConfirm) {
+            Button("Sign Out", role: .destructive) {
+                locationManager.stopTracking()
+                storage.clearAll()
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will clear your credentials from this device. You can sign in again at any time.")
+        }
         .alert("Delete All Data?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) { performDelete() }
             Button("Cancel", role: .cancel) {}
@@ -268,7 +318,7 @@ struct SettingsSheet: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title.uppercased())
-            .font(.system(size: 12, weight: .semibold))
+            .font(.caption.weight(.semibold))
             .tracking(1.5)
             .foregroundStyle(Color.pcAccent)
             .padding(.horizontal, 24)
@@ -285,16 +335,16 @@ struct SettingsSheet: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(mode.label)
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .font(.system(.body, design: .rounded, weight: .semibold))
                         .foregroundStyle(Color.pcText)
                     Text(mode.settingsDescription)
-                        .font(.system(size: 14))
+                        .font(.footnote)
                         .foregroundStyle(Color.pcText2)
                 }
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.body.weight(.semibold))
                         .foregroundStyle(Color.pcAccent)
                         .accessibilityHidden(true)
                 }

@@ -32,9 +32,9 @@ struct SignInView: View {
             } label: {
                 HStack(spacing: 8) {
                     Text("G")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.title3.bold())
                     Text("Sign in with Google")
-                        .font(.system(size: 17, weight: .medium))
+                        .font(.body.weight(.medium))
                 }
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity)
@@ -52,7 +52,7 @@ struct SignInView: View {
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.system(size: 14))
+                    .font(.footnote)
                     .foregroundStyle(Color.pcError)
                     .multilineTextAlignment(.center)
                     .padding(.top, 4)

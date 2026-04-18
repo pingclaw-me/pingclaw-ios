@@ -51,32 +51,89 @@ enum PingClawFonts {
     }()
 }
 
-// Two-tone wordmark — "Ping" in primary text, "Claw" in accent teal.
-// Uses Syne ExtraBold (bundled). The .system rounded fallback only kicks
-// in if the font failed to register for some reason. When `stacked` is
-// true, the two words are rendered on separate lines (matches the
-// website hero layout).
+// Two-tone wordmark — "Ping" in primary text, "Claw" in accent teal,
+// always on a single line. Uses Syne ExtraBold (bundled). The dot on
+// the "i" in "Ping" pulses with the accent glow from the app icon.
+// When `animated` is true (default) the dot cycles through a soft
+// breathing glow.
 struct PingClawWordmark: View {
     var size: CGFloat = 28
-    var stacked: Bool = false
+    var animated: Bool = true
 
     var body: some View {
-        Group {
-            if stacked {
-                // Negative VStack spacing pulls the two Text bounding boxes
-                // into each other, mirroring the website's `line-height: 0.88`
-                // on .pc-hero-stacked.
-                VStack(alignment: .leading, spacing: -size * 0.3) {
-                    Text("Ping").foregroundStyle(Color.pcText)
-                    Text("Claw").foregroundStyle(Color.pcAccent)
-                }
-            } else {
-                HStack(spacing: 0) {
-                    Text("Ping").foregroundStyle(Color.pcText)
-                    Text("Claw").foregroundStyle(Color.pcAccent)
-                }
-            }
+        HStack(spacing: 0) {
+            pingText
+            Text("Claw").foregroundStyle(Color.pcAccent)
         }
         .font(.custom("Syne-ExtraBold", size: size))
+    }
+
+    /// "Ping" with the "i" dot replaced by an animated glow circle.
+    /// The dotless-i trick: render "P" + "ı" (U+0131, Turkish dotless i)
+    /// + "ng" so the font draws no dot, then overlay our own.
+    private var pingText: some View {
+        HStack(spacing: 0) {
+            Text("P\u{0131}")
+                .foregroundStyle(Color.pcText)
+                .overlay(alignment: .topTrailing) {
+                    PingDot(size: size, animated: animated)
+                }
+            Text("ng")
+                .foregroundStyle(Color.pcText)
+        }
+    }
+}
+
+/// The pulsing dot that replaces the "i" tittle in "Ping".
+private struct PingDot: View {
+    let size: CGFloat
+    let animated: Bool
+    @State private var phase: CGFloat = 0
+
+    // Glow colours sampled from the app icon's crosshair.
+    private let glowBright = Color(red: 0/255, green: 240/255, blue: 200/255) // bright cyan
+    private let glowDim    = Color(red: 0/255, green: 160/255, blue: 130/255) // dimmer teal
+
+    private var dotSize: CGFloat { size * 0.16 }
+
+    // Vertical offset: place the dot where a Syne ExtraBold tittle sits.
+    private var yOffset: CGFloat { size * 0.08 }
+    // Pull left to center over the stem of ı.
+    private var xOffset: CGFloat { size * 0.19 }
+
+    var body: some View {
+        Rectangle()
+            .fill(currentColor)
+            .frame(width: dotSize, height: dotSize)
+            .shadow(color: currentColor.opacity(glowOpacity), radius: dotSize * 0.8)
+            .offset(x: -xOffset, y: yOffset)
+            .onAppear {
+                guard animated else { return }
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                    phase = 1
+                }
+            }
+    }
+
+    private var currentColor: Color {
+        animated ? interpolated : glowBright
+    }
+
+    private var glowOpacity: Double {
+        animated ? 0.5 + 0.4 * Double(phase) : 0.7
+    }
+
+    private var interpolated: Color {
+        // Blend between dim and bright based on phase.
+        let t = Double(phase)
+        return Color(
+            red:   lerp(0/255, 0/255, t),
+            green: lerp(160/255, 240/255, t),
+            blue:  lerp(130/255, 200/255, t)
+        )
+    }
+
+    private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double {
+        a + (b - a) * t
     }
 }

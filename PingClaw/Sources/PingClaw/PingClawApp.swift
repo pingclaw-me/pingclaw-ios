@@ -33,8 +33,7 @@ struct PingClawApp: App {
                         .zIndex(1)
                 }
             }
-            .task {
-                try? await Task.sleep(nanoseconds: 800_000_000)
+            .onAppear {
                 withAnimation(.easeOut(duration: 0.4)) {
                     showSplash = false
                 }

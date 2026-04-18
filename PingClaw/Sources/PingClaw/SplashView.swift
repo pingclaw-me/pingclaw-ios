@@ -1,18 +1,20 @@
 import SwiftUI
 
-/// Full-screen branded splash shown briefly at launch. Matches the
-/// app's dark background so the transition from the system launch
-/// screen is seamless, then fades out to reveal ContentView.
+/// Full-screen branded splash shown briefly at launch. Displays the
+/// hero banner (icon + wordmark + tagline) centered on the app's dark
+/// background, then fades out to reveal ContentView.
 struct SplashView: View {
     var body: some View {
         ZStack {
             Color.pcBg.ignoresSafeArea()
 
-            VStack(spacing: 12) {
-                PingClawWordmark(size: 48, stacked: true)
-                Text("Location context for AI")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Color.pcText2)
+            if let url = Bundle.module.url(forResource: "Hero", withExtension: "png"),
+               let data = try? Data(contentsOf: url),
+               let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(.horizontal, 32)
             }
         }
         .preferredColorScheme(.dark)

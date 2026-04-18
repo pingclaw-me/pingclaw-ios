@@ -23,7 +23,7 @@ struct ContentView: View {
                         Spacer()
                         Button { showSettings = true } label: {
                             Text("Settings")
-                                .font(.system(size: 16, weight: .medium))
+                                .font(.body)
                                 .foregroundStyle(Color.pcText2)
                         }
                         .accessibilityLabel("Settings")
@@ -33,24 +33,24 @@ struct ContentView: View {
                     .padding(.top, 12)
                 }
 
-                // Wordmark + tagline
-                PingClawWordmark(size: 56, stacked: true)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 24)
-                    .accessibilityLabel("PingClaw")
-
-                Text("Location context for AI")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.pcText2)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
-                    .accessibilityAddTraits(.isHeader)
+                // Wordmark (includes tagline)
+                if let url = Bundle.module.url(forResource: "Wordmark", withExtension: "png"),
+                   let data = try? Data(contentsOf: url),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 280)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 32)
+                        .accessibilityLabel("PingClaw — Location context for AI")
+                        .accessibilityAddTraits(.isHeader)
+                }
 
                 // Sign-in card — shown when no pairing token exists.
                 if !isSignedIn {
                     SignInView(storage: storage) {
-                        // Token saved → flip the flag so SwiftUI re-renders,
-                        // then start tracking.
                         isSignedIn = true
                         locationManager.startTracking()
                     }
@@ -65,7 +65,7 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Location Sharing")
-                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .font(.system(.title3, design: .rounded, weight: .bold))
                                 .foregroundStyle(Color.pcText)
                             Spacer()
                             statusPill(on: locationManager.isTracking)
@@ -74,7 +74,7 @@ struct ContentView: View {
                         Text(locationManager.isTracking
                              ? "Tap to pause sharing from this device."
                              : "Tap to start sharing from this device.")
-                            .font(.system(size: 15))
+                            .font(.subheadline)
                             .foregroundStyle(Color.pcText2)
                     }
                 }
@@ -126,7 +126,7 @@ struct ContentView: View {
                             }
                             Text(shareCooldown ? "Sent" : "Share Current Location Now")
                         }
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.body.weight(.medium))
                         .foregroundStyle(shareCooldown ? Color.pcText2 : Color.pcText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -153,14 +153,14 @@ struct ContentView: View {
                 #if DEBUG
                 VStack(alignment: .leading, spacing: 8) {
                     Text("SERVER URL")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.caption2.weight(.semibold))
                         .tracking(1.4)
                         .foregroundStyle(Color.pcText3)
                     TextField("Server URL", text: $serverUrl)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
-                        .font(.system(size: 14, design: .monospaced))
+                        .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(Color.pcText)
                         .padding(10)
                         .background(
@@ -180,7 +180,6 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showSettings, onDismiss: {
-            // Re-check sign-in state in case the user signed out.
             isSignedIn = storage.getPairingToken() != nil
         }) {
             SettingsSheet(locationManager: locationManager, storage: storage)
@@ -201,7 +200,7 @@ struct ContentView: View {
                     .accessibilityHidden(true)
             }
             Text(on ? "ON" : "OFF")
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .font(.system(.caption2, design: .monospaced, weight: .medium))
                 .tracking(0.8)
                 .foregroundStyle(on ? Color.pcAccent : Color.pcText3)
         }
@@ -215,17 +214,17 @@ struct ContentView: View {
                         .stroke(on ? Color.pcAccent3 : Color.pcBorder2, lineWidth: 1)
                 )
         )
-        .accessibilityHidden(true) // parent button already reads the state
+        .accessibilityHidden(true)
     }
 
     private func statCard(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
-                .font(.system(size: 11, weight: .medium))
+                .font(.caption2.weight(.medium))
                 .tracking(1.4)
                 .foregroundStyle(Color.pcText3)
             Text(value)
-                .font(.system(size: 17, weight: .medium, design: .monospaced))
+                .font(.system(.callout, design: .monospaced, weight: .medium))
                 .foregroundStyle(Color.pcText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -258,9 +257,6 @@ struct ContentView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
             Task { @MainActor in
                 tick += 1
-                // Catch server-side sign-out (account deleted from the
-                // web dashboard, or token rotated). APIService clears the
-                // keychain on a 401; the tick picks it up here.
                 if isSignedIn && storage.getPairingToken() == nil {
                     isSignedIn = false
                 }
