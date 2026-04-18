@@ -20,6 +20,8 @@ let package = Package(
                 // Syne — Bonjour Monde, OFL-licensed.
                 // Variable font (weight axis 400–800) used for the PingClaw wordmark.
                 .copy("Resources/Fonts"),
+                // Apple-required privacy manifest (iOS 17+).
+                .copy("Resources/PrivacyInfo.xcprivacy"),
             ]
         ),
     ]

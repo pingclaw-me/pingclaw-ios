@@ -186,6 +186,15 @@ final class LocationManager: NSObject {
                 try await self.apiService.postLocation(location: location, activity: activity)
                 self.connection = .connected
             } catch {
+                // If the server returned 401, the pairing token is no
+                // longer valid (account deleted or token rotated from
+                // another device). APIService already cleared the keychain;
+                // stop tracking so the app returns to the sign-in screen.
+                if case APIError.serverError(401) = error {
+                    self.stopTracking()
+                    self.connection = .error("Session expired")
+                    return
+                }
                 self.connection = .error("Failed to reach server")
             }
         }

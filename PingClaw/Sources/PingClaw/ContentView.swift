@@ -7,36 +7,58 @@ struct ContentView: View {
     @State private var tick = 0
     @State private var timer: Timer?
     @State private var shareCooldown = false
+    @State private var isSignedIn = false
+    #if DEBUG
+    @State private var serverUrl = ""
+    #endif
 
     var body: some View {
         ZStack {
             Color.pcBg.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                // Header — settings button on the right
-                HStack {
-                    Spacer()
-                    Button { showSettings = true } label: {
-                        Text("Settings")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(Color.pcText2)
+                // Header — settings button on the right (only when signed in)
+                if isSignedIn {
+                    HStack {
+                        Spacer()
+                        Button { showSettings = true } label: {
+                            Text("Settings")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(Color.pcText2)
+                        }
+                        .accessibilityLabel("Settings")
+                        .accessibilityHint("Opens pairing token, update mode, and account settings")
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
 
                 // Wordmark + tagline
                 PingClawWordmark(size: 56, stacked: true)
                     .padding(.horizontal, 24)
                     .padding(.top, 24)
+                    .accessibilityLabel("PingClaw")
 
                 Text("Location context for AI")
                     .font(.system(size: 16))
                     .foregroundStyle(Color.pcText2)
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
+                    .accessibilityAddTraits(.isHeader)
 
-                // Location Sharing card — entire card is tappable
+                // Sign-in card — shown when no pairing token exists.
+                if !isSignedIn {
+                    SignInView(storage: storage) {
+                        // Token saved → flip the flag so SwiftUI re-renders,
+                        // then start tracking.
+                        isSignedIn = true
+                        locationManager.startTracking()
+                    }
+                    .padding(.top, 32)
+                }
+
+                // Location Sharing card — shown once signed in.
+                if isSignedIn {
                 Button {
                     handleToggle(!locationManager.isTracking)
                 } label: {
@@ -57,6 +79,11 @@ struct ContentView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Location Sharing")
+                .accessibilityValue(locationManager.isTracking ? "On" : "Off")
+                .accessibilityHint(locationManager.isTracking
+                    ? "Double-tap to pause sharing"
+                    : "Double-tap to start sharing")
                 .padding(20)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
@@ -67,9 +94,9 @@ struct ContentView: View {
                         )
                 )
                 .padding(.horizontal, 24)
-                .padding(.top, 32)
+                .padding(.top, 16)
 
-                // Status cards
+                // Status cards + share button
                 if locationManager.isTracking {
                     HStack(spacing: 12) {
                         statCard(title: "Last update", value: formatTimeAgo(locationManager.lastUpdateTime))
@@ -114,18 +141,54 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(shareCooldown)
+                    .accessibilityLabel(shareCooldown ? "Location sent" : "Share current location now")
+                    .accessibilityHint(shareCooldown ? "Waiting before you can send again" : "Sends your current location to your agent immediately")
                     .padding(.horizontal, 24)
-                    .padding(.top, 12)
+                    .padding(.top, 16)
                 }
+                } // end "if storage.getPairingToken() != nil"
 
                 Spacer()
+
+                #if DEBUG
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("SERVER URL")
+                        .font(.system(size: 11, weight: .semibold))
+                        .tracking(1.4)
+                        .foregroundStyle(Color.pcText3)
+                    TextField("Server URL", text: $serverUrl)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        .font(.system(size: 14, design: .monospaced))
+                        .foregroundStyle(Color.pcText)
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.pcSurface)
+                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.pcBorder, lineWidth: 1))
+                        )
+                        .onChange(of: serverUrl) { _, newValue in
+                            storage.serverUrl = newValue
+                        }
+                        .onAppear { serverUrl = storage.serverUrl }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+                #endif
             }
         }
         .preferredColorScheme(.dark)
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: $showSettings, onDismiss: {
+            // Re-check sign-in state in case the user signed out.
+            isSignedIn = storage.getPairingToken() != nil
+        }) {
             SettingsSheet(locationManager: locationManager, storage: storage)
         }
-        .onAppear { startTimer() }
+        .onAppear {
+            isSignedIn = storage.getPairingToken() != nil
+            startTimer()
+        }
         .onDisappear { stopTimer() }
     }
 
@@ -135,6 +198,7 @@ struct ContentView: View {
                 Circle()
                     .fill(Color.pcAccent)
                     .frame(width: 6, height: 6)
+                    .accessibilityHidden(true)
             }
             Text(on ? "ON" : "OFF")
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
@@ -151,6 +215,7 @@ struct ContentView: View {
                         .stroke(on ? Color.pcAccent3 : Color.pcBorder2, lineWidth: 1)
                 )
         )
+        .accessibilityHidden(true) // parent button already reads the state
     }
 
     private func statCard(title: String, value: String) -> some View {
@@ -173,6 +238,8 @@ struct ContentView: View {
                         .stroke(Color.pcBorder, lineWidth: 1)
                 )
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 
     private func handleToggle(_ value: Bool) {
@@ -191,6 +258,12 @@ struct ContentView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
             Task { @MainActor in
                 tick += 1
+                // Catch server-side sign-out (account deleted from the
+                // web dashboard, or token rotated). APIService clears the
+                // keychain on a 401; the tick picks it up here.
+                if isSignedIn && storage.getPairingToken() == nil {
+                    isSignedIn = false
+                }
             }
         }
     }

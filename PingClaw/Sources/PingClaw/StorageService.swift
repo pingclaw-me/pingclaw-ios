@@ -9,6 +9,7 @@ final class StorageService {
         static let updateMode = "update_mode"
         static let serverUrl = "server_url"
         static let isTracking = "is_tracking"
+        static let googleClientID = "google_client_id"
     }
 
     private static let keychainService = "me.pingclaw.app"
@@ -38,6 +39,15 @@ final class StorageService {
     var isTracking: Bool {
         get { defaults.bool(forKey: Keys.isTracking) }
         set { defaults.set(newValue, forKey: Keys.isTracking) }
+    }
+
+    /// Google OAuth client ID. Set this to the web client ID from the
+    /// Google Cloud Console. Empty string disables Google sign-in.
+    var googleClientID: String {
+        // iOS uses the iOS-type client ID (custom URL schemes allowed).
+        // Web uses the Web-type client ID (set in the meta tag + server env).
+        get { defaults.string(forKey: Keys.googleClientID) ?? "829482463629-bns6vt57man8o94sf11i1b8nk9g70lb5.apps.googleusercontent.com" }
+        set { defaults.set(newValue, forKey: Keys.googleClientID) }
     }
 
     // MARK: - Keychain (pairing token)

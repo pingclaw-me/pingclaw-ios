@@ -89,9 +89,80 @@ final class APIService {
         let (_, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            // 401 means the token is no longer valid — the account was
+            // deleted from the dashboard or the token was rotated. Clear
+            // local credentials so the app returns to the sign-in screen.
+            if code == 401 {
+                storage.clearAll()
+            }
             throw APIError.serverError(code)
         }
     }
+
+    // MARK: - Social auth
+
+    /// Sends a provider identity token to the server for verification.
+    /// On success the server creates (or finds) the user and returns a
+    /// pairing_token the app stores in the keychain.
+    func socialSignIn(provider: String, idToken: String) async throws -> String {
+        let serverUrl = storage.serverUrl
+        guard let url = URL(string: "\(serverUrl)/pingclaw/auth/social") else {
+            throw APIError.serverError(0)
+        }
+        let payload: [String: String] = [
+            "provider": provider,
+            "id_token": idToken,
+            "client": "ios",
+        ]
+        let body = try JSONEncoder().encode(payload)
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw APIError.serverError(code)
+        }
+
+        struct Response: Decodable { let pairing_token: String }
+        let decoded = try JSONDecoder().decode(Response.self, from: data)
+        return decoded.pairing_token
+    }
+
+    /// Requests a short-lived web login code from the server. The user
+    /// types this code into the web dashboard to sign in there.
+    func requestWebCode() async throws -> String {
+        let token = storage.getPairingToken()
+        guard let token, !token.isEmpty else {
+            throw APIError.noToken
+        }
+        let serverUrl = storage.serverUrl
+        guard let url = URL(string: "\(serverUrl)/pingclaw/auth/web-code") else {
+            throw APIError.serverError(0)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw APIError.serverError(code)
+        }
+
+        struct Response: Decodable { let code: String }
+        let decoded = try JSONDecoder().decode(Response.self, from: data)
+        return decoded.code
+    }
+
+    // MARK: - Account
 
     func deleteAccount() async throws {
         let token = storage.getPairingToken()

@@ -9,7 +9,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
-		<string>fetch</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
@@ -19,24 +18,13 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>pingclaw</string>
+				<string>com.googleusercontent.apps.829482463629-bns6vt57man8o94sf11i1b8nk9g70lb5</string>
 			</array>
 		</dict>
 	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>localhost</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-			<key>127.0.0.1</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-			</dict>
-		</dict>
-	</dict>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
+	<key>UILaunchScreen</key>
+	<dict/>
 </dict>
 </plist>

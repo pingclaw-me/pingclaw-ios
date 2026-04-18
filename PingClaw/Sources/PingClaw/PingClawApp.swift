@@ -6,6 +6,7 @@ struct PingClawApp: App {
     @State private var locationManager: LocationManager
     @State private var showPairingSuccess = false
     @State private var pairingError: String?
+    @State private var showSplash = true
 
     init() {
         // Register the bundled Syne font so PingClawWordmark can use it.
@@ -20,10 +21,24 @@ struct PingClawApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(locationManager: locationManager, storage: storage)
-                .onOpenURL { url in
-                    handleDeepLink(url)
+            ZStack {
+                ContentView(locationManager: locationManager, storage: storage)
+                    .onOpenURL { url in
+                        handleDeepLink(url)
+                    }
+
+                if showSplash {
+                    SplashView()
+                        .transition(.opacity)
+                        .zIndex(1)
                 }
+            }
+            .task {
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                withAnimation(.easeOut(duration: 0.4)) {
+                    showSplash = false
+                }
+            }
                 .alert("Paired Successfully", isPresented: $showPairingSuccess) {
                     Button("Start Sharing") {
                         locationManager.startTracking()
