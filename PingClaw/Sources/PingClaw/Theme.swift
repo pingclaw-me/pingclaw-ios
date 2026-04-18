@@ -1,37 +1,51 @@
 import CoreText
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
-// PingClaw — Signal palette, mirroring the web style guide.
-// Hex values converted from the canonical CSS variables in
-// pingclaw_style_guide.md (section 2 "Colour").
+// PingClaw — Adaptive color palette supporting light and dark mode.
+// Dark values match the web style guide CSS variables.
+// Light values are designed for WCAG contrast on white backgrounds.
+
+private func adaptive(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> Color {
+    #if os(iOS)
+    Color(UIColor { traits in
+        let (r, g, b) = traits.userInterfaceStyle == .dark ? dark : light
+        return UIColor(red: r/255, green: g/255, blue: b/255, alpha: 1)
+    })
+    #else
+    Color(red: dark.0/255, green: dark.1/255, blue: dark.2/255)
+    #endif
+}
 
 extension Color {
     // Backgrounds
-    static let pcBg        = Color(red: 8/255,   green: 14/255,  blue: 12/255)   // #080e0c
-    static let pcSurface   = Color(red: 15/255,  green: 26/255,  blue: 24/255)   // #0f1a18
-    static let pcSurface2  = Color(red: 22/255,  green: 40/255,  blue: 36/255)   // #162824
-    static let pcSurface3  = Color(red: 30/255,  green: 53/255,  blue: 48/255)   // #1e3530
+    static let pcBg       = adaptive(light: (242, 247, 246), dark: (8, 14, 12))       // #f2f7f6 / #080e0c
+    static let pcSurface  = adaptive(light: (255, 255, 255), dark: (15, 26, 24))      // #ffffff / #0f1a18
+    static let pcSurface2 = adaptive(light: (232, 240, 238), dark: (22, 40, 36))      // #e8f0ee / #162824
+    static let pcSurface3 = adaptive(light: (220, 230, 228), dark: (30, 53, 48))      // #dce6e4 / #1e3530
 
     // Borders
-    static let pcBorder    = Color(red: 26/255,  green: 46/255,  blue: 42/255)   // #1a2e2a
-    static let pcBorder2   = Color(red: 36/255,  green: 62/255,  blue: 56/255)   // #243e38
+    static let pcBorder   = adaptive(light: (200, 216, 212), dark: (26, 46, 42))      // #c8d8d4 / #1a2e2a
+    static let pcBorder2  = adaptive(light: (176, 196, 190), dark: (36, 62, 56))      // #b0c4be / #243e38
 
-    // Accent — teal
-    static let pcAccent    = Color(red: 0/255,   green: 194/255, blue: 160/255)  // #00c2a0
-    static let pcAccent2   = Color(red: 0/255,   green: 133/255, blue: 110/255)  // #00856e
-    static let pcAccent3   = Color(red: 0/255,   green: 96/255,  blue: 79/255)   // #00604f
-    static let pcAccentBg  = Color(red: 7/255,   green: 26/255,  blue: 22/255)   // #071a16
+    // Accent — teal (darkened in light mode for contrast on white)
+    static let pcAccent   = adaptive(light: (0, 158, 130), dark: (0, 194, 160))       // #009e82 / #00c2a0
+    static let pcAccent2  = adaptive(light: (0, 122, 102), dark: (0, 133, 110))       // #007a66 / #00856e
+    static let pcAccent3  = adaptive(light: (224, 245, 240), dark: (0, 96, 79))       // #e0f5f0 / #00604f
+    static let pcAccentBg = adaptive(light: (232, 248, 244), dark: (7, 26, 22))       // #e8f8f4 / #071a16
 
     // Text
-    static let pcText      = Color(red: 192/255, green: 240/255, blue: 232/255)  // #c0f0e8
-    static let pcText2     = Color(red: 122/255, green: 184/255, blue: 172/255)  // #7ab8ac
-    static let pcText3     = Color(red: 61/255,  green: 110/255, blue: 102/255)  // #3d6e66
-    static let pcText4     = Color(red: 32/255,  green: 72/255,  blue: 64/255)   // #204840
+    static let pcText     = adaptive(light: (10, 30, 26), dark: (192, 240, 232))      // #0a1e1a / #c0f0e8
+    static let pcText2    = adaptive(light: (61, 92, 84), dark: (122, 184, 172))      // #3d5c54 / #7ab8ac
+    static let pcText3    = adaptive(light: (107, 143, 134), dark: (61, 110, 102))    // #6b8f86 / #3d6e66
+    static let pcText4    = adaptive(light: (155, 181, 174), dark: (32, 72, 64))      // #9bb5ae / #204840
 
     // Semantic
-    static let pcWarning   = Color(red: 200/255, green: 154/255, blue: 26/255)   // #c89a1a
-    static let pcError     = Color(red: 200/255, green: 64/255,  blue: 64/255)   // #c84040
-    static let pcErrorBg   = Color(red: 26/255,  green: 8/255,   blue: 8/255)    // #1a0808
+    static let pcWarning  = adaptive(light: (158, 122, 0), dark: (200, 154, 26))      // #9e7a00 / #c89a1a
+    static let pcError    = adaptive(light: (184, 48, 48), dark: (200, 64, 64))       // #b83030 / #c84040
+    static let pcErrorBg  = adaptive(light: (253, 234, 234), dark: (26, 8, 8))        // #fdeaea / #1a0808
 }
 
 // Register Syne (bundled OFL font) once at app startup so SwiftUI
@@ -68,7 +82,7 @@ struct PingClawWordmark: View {
         .font(.custom("Syne-ExtraBold", size: size))
     }
 
-    /// "Ping" with the "i" dot replaced by an animated glow circle.
+    /// "Ping" with the "i" dot replaced by an animated glow square.
     /// The dotless-i trick: render "P" + "ı" (U+0131, Turkish dotless i)
     /// + "ng" so the font draws no dot, then overlay our own.
     private var pingText: some View {
@@ -124,7 +138,6 @@ private struct PingDot: View {
     }
 
     private var interpolated: Color {
-        // Blend between dim and bright based on phase.
         let t = Double(phase)
         return Color(
             red:   lerp(0/255, 0/255, t),

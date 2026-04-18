@@ -24,7 +24,9 @@ let package = Package(
                 .copy("Resources/PrivacyInfo.xcprivacy"),
                 // Branding images for splash and main screens.
                 .copy("Resources/Hero.png"),
+                .copy("Resources/HeroLight.png"),
                 .copy("Resources/Wordmark.png"),
+                .copy("Resources/WordmarkLight.png"),
             ]
         ),
     ]

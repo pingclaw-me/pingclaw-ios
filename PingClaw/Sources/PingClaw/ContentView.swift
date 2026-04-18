@@ -1,8 +1,10 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @Bindable var locationManager: LocationManager
     var storage: StorageService
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
     @State private var tick = 0
     @State private var timer: Timer?
@@ -33,8 +35,8 @@ struct ContentView: View {
                     .padding(.top, 12)
                 }
 
-                // Wordmark (includes tagline)
-                if let url = Bundle.module.url(forResource: "Wordmark", withExtension: "png"),
+                // Wordmark (includes tagline) — adaptive for light/dark
+                if let url = Bundle.module.url(forResource: colorScheme == .dark ? "Wordmark" : "WordmarkLight", withExtension: "png"),
                    let data = try? Data(contentsOf: url),
                    let uiImage = UIImage(data: data) {
                     Image(uiImage: uiImage)
@@ -108,6 +110,7 @@ struct ContentView: View {
                     Button {
                         guard !shareCooldown else { return }
                         locationManager.requestImmediatePing()
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         withAnimation(.easeInOut(duration: 0.2)) {
                             shareCooldown = true
                         }
@@ -178,7 +181,6 @@ struct ContentView: View {
                 #endif
             }
         }
-        .preferredColorScheme(.dark)
         .sheet(isPresented: $showSettings, onDismiss: {
             isSignedIn = storage.getPairingToken() != nil
         }) {

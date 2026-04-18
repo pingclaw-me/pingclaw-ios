@@ -247,7 +247,6 @@ struct SettingsSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
         #if os(iOS)
         .sheet(isPresented: $showPrivacyPolicy) {
             if let url = URL(string: "\(storage.serverUrl)/privacypolicy?embedded=1") {

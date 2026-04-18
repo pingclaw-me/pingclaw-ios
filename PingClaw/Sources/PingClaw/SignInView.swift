@@ -22,9 +22,10 @@ struct SignInView: View {
             } onCompletion: { result in
                 handleAppleResult(result)
             }
-            .signInWithAppleButtonStyle(.white)
+            .signInWithAppleButtonStyle(.whiteOutline)
             .frame(height: 50)
             .cornerRadius(8)
+            .accessibilityLabel("Sign in with Apple")
 
             // Sign in with Google — styled to match
             Button {
@@ -36,13 +37,18 @@ struct SignInView: View {
                     Text("Sign in with Google")
                         .font(.body.weight(.medium))
                 }
-                .foregroundStyle(.black)
+                .foregroundStyle(Color.pcText)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(Color.white)
+                .background(Color.pcSurface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.pcBorder, lineWidth: 1)
+                )
                 .cornerRadius(8)
             }
             .disabled(isSigningIn)
+            .accessibilityLabel("Sign in with Google")
 
             if isSigningIn {
                 ProgressView()
