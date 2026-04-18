@@ -18,7 +18,7 @@ struct SignInView: View {
         VStack(spacing: 16) {
             // Sign in with Apple — native button
             SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.email]
+                request.requestedScopes = []
             } onCompletion: { result in
                 handleAppleResult(result)
             }
@@ -113,7 +113,7 @@ struct SignInView: View {
             .init(name: "client_id", value: clientID),
             .init(name: "redirect_uri", value: redirectURI),
             .init(name: "response_type", value: "code"),
-            .init(name: "scope", value: "openid email"),
+            .init(name: "scope", value: "openid"),
             .init(name: "code_challenge", value: codeChallenge),
             .init(name: "code_challenge_method", value: "S256"),
         ]
