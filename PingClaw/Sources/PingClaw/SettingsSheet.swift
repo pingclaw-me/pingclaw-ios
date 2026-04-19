@@ -17,6 +17,7 @@ struct SettingsSheet: View {
     @State private var deleteError: String?
     @State private var showPrivacyPolicy = false
     @State private var showTermsOfService = false
+    @State private var chatGPTURL: String?
 
     var body: some View {
         ZStack {
@@ -57,7 +58,7 @@ struct SettingsSheet: View {
                                         Text("Open Dashboard")
                                             .font(.system(.body, design: .rounded, weight: .semibold))
                                             .foregroundStyle(Color.pcText)
-                                        Text("Opens the web dashboard in your browser, automatically signed in.")
+                                        Text("Set up MCP agents, webhooks, and manage your API key.")
                                             .font(.footnote)
                                             .foregroundStyle(Color.pcText2)
                                             .multilineTextAlignment(.leading)
@@ -105,6 +106,19 @@ struct SettingsSheet: View {
                                 .accessibilityLabel("Web login code: \(webCode)")
                                 .accessibilityHint("Tap to copy to clipboard")
                                 .padding(16)
+
+                                Divider().overlay(Color.pcBorder).padding(.leading, 16)
+
+                                Button {
+                                    generateWebCode()
+                                } label: {
+                                    Text("Generate new code")
+                                        .font(.system(.body, design: .rounded, weight: .semibold))
+                                        .foregroundStyle(Color.pcAccent)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(16)
+                                }
+                                .disabled(webCodeLoading)
                             } else {
                                 Button {
                                     generateWebCode()
@@ -133,6 +147,39 @@ struct SettingsSheet: View {
                         )
                         .padding(.horizontal, 24)
                     } // end web dashboard section
+
+                    // INTEGRATIONS
+                    if let chatGPTURL, let url = URL(string: chatGPTURL) {
+                        sectionHeader("Integrations")
+
+                        VStack(spacing: 0) {
+                            Button {
+                                #if os(iOS)
+                                UIApplication.shared.open(url)
+                                #endif
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Open PingClaw GPT")
+                                        .font(.system(.body, design: .rounded, weight: .semibold))
+                                        .foregroundStyle(Color.pcText)
+                                    Text("Opens ChatGPT with the PingClaw GPT. Authorize it to let ChatGPT read your location.")
+                                        .font(.footnote)
+                                        .foregroundStyle(Color.pcText2)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(16)
+                            }
+                            .accessibilityLabel("Open PingClaw GPT")
+                            .accessibilityHint("Opens ChatGPT with the PingClaw integration")
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.pcSurface)
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pcBorder, lineWidth: 1))
+                        )
+                        .padding(.horizontal, 24)
+                    }
 
                     // UPDATE MODE
                     sectionHeader("Update mode")
@@ -287,7 +334,9 @@ struct SettingsSheet: View {
         }
         .onAppear {
             selectedMode = storage.updateMode
-            // (token paste UI removed — sign-in now happens via social auth)
+        }
+        .task {
+            await fetchConfig()
         }
     }
 
@@ -399,4 +448,19 @@ struct SettingsSheet: View {
         }
     }
 
+    private func fetchConfig() async {
+        guard let url = URL(string: "\(storage.serverUrl)/pingclaw/config") else { return }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let integrations = json["integrations"] as? [String: Any],
+               let chatgpt = integrations["chatgpt"] as? [String: Any],
+               let gptURL = chatgpt["url"] as? String,
+               !gptURL.isEmpty {
+                chatGPTURL = gptURL
+            }
+        } catch {
+            // Config fetch is best-effort; integrations section just won't show.
+        }
+    }
 }

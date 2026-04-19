@@ -2,6 +2,31 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleDisplayName</key>
+	<string>PingClaw</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>PingClaw sends your location to your personal AI agent so it can answer location-aware questions. Your location is only shared with your own PingClaw account.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -18,7 +43,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>pingclaw</string>
-				<string>com.googleusercontent.apps.829482463629-bns6vt57man8o94sf11i1b8nk9g70lb5</string>
+				<string>com.googleusercontent.apps.339229829038-hli9moca58el3r2sboog5545njfnqddd</string>
 			</array>
 		</dict>
 	</array>

@@ -27,7 +27,7 @@ struct SignInView: View {
             .cornerRadius(8)
             .accessibilityLabel("Sign in with Apple")
 
-            // Sign in with Google — styled to match
+            // Sign in with Google — styled to match Apple button
             Button {
                 startGoogleSignIn()
             } label: {
@@ -37,13 +37,13 @@ struct SignInView: View {
                     Text("Sign in with Google")
                         .font(.body.weight(.medium))
                 }
-                .foregroundStyle(Color.pcText)
+                .foregroundStyle(.black)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(Color.pcSurface)
+                .background(Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.pcBorder, lineWidth: 1)
+                        .stroke(Color.white.opacity(0.8), lineWidth: 1)
                 )
                 .cornerRadius(8)
             }

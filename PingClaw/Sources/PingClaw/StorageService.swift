@@ -46,7 +46,7 @@ final class StorageService {
     var googleClientID: String {
         // iOS uses the iOS-type client ID (custom URL schemes allowed).
         // Web uses the Web-type client ID (set in the meta tag + server env).
-        get { defaults.string(forKey: Keys.googleClientID) ?? "829482463629-bns6vt57man8o94sf11i1b8nk9g70lb5.apps.googleusercontent.com" }
+        get { defaults.string(forKey: Keys.googleClientID) ?? "339229829038-hli9moca58el3r2sboog5545njfnqddd.apps.googleusercontent.com" }
         set { defaults.set(newValue, forKey: Keys.googleClientID) }
     }
 

@@ -1,0 +1,6 @@
+XcodeApp/build/
+XcodeApp/PingClaw.xcodeproj/
+*.xcuserstate
+.DS_Store
+PingClaw/build.log
+PingClaw/profile.txt
