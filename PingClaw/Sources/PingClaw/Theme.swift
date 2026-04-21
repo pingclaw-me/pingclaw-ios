@@ -54,16 +54,6 @@ extension Color {
     static let amber     = adaptive(light: 0xB87D2C, dark: 0xD89A4C)
     static let red       = adaptive(light: 0xC23B2C, dark: 0xE06859)
 
-    // Legacy aliases (keep temporarily while migrating views)
-    static let pcBg      = paper
-    static let pcSurface = paperWarm
-    static let pcBorder  = rule
-    static let pcAccent  = rust
-    static let pcText    = ink
-    static let pcText2   = inkSoft
-    static let pcText3   = inkFaint
-    static let pcWarning = amber
-    static let pcError   = red
 }
 
 // MARK: - Font registration
