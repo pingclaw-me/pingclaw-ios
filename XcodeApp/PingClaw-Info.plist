@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>me.pingclaw.app</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleDisplayName</key>
 	<string>PingClaw</string>
 	<key>CFBundleName</key>
-	<string>PingClaw</string>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleVersion</key>
-	<string>8</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleExecutable</key>
-	<string>PingClaw</string>
+	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -52,7 +52,7 @@
 			</array>
 		</dict>
 	</array>
-<key>UILaunchScreen</key>
+	<key>UILaunchScreen</key>
 	<dict/>
 </dict>
 </plist>

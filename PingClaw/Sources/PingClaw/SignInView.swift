@@ -13,6 +13,9 @@ struct SignInView: View {
 
     @State private var isSigningIn = false
     @State private var errorMessage: String?
+    @State private var showSelfHosted = false
+    @State private var selfHostedURL = ""
+    @State private var selfHostedToken = ""
 
     var body: some View {
         VStack(spacing: 16) {
@@ -63,8 +66,118 @@ struct SignInView: View {
                     .multilineTextAlignment(.center)
                     .padding(.top, 4)
             }
+
+            // Self-hosted server
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showSelfHosted.toggle()
+                }
+            } label: {
+                Text("Self-Hosted Server")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(Color.pcText3)
+            }
+            .padding(.top, 8)
+
+            if showSelfHosted {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Connect to your own PingClaw server.")
+                        .font(.footnote)
+                        .foregroundStyle(Color.pcText2)
+
+                    TextField("http://192.168.1.100:8080", text: $selfHostedURL)
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(Color.pcText)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.URL)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.pcBorder, lineWidth: 1)
+                        )
+
+                    TextField("pt_...", text: $selfHostedToken)
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(Color.pcText)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.pcBorder, lineWidth: 1)
+                        )
+
+                    Button {
+                        connectSelfHosted()
+                    } label: {
+                        Text("Connect")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(Color.pcAccent)
+                            .cornerRadius(8)
+                    }
+                    .disabled(isSigningIn)
+                }
+                .padding(.top, 4)
+            }
         }
         .padding(.horizontal, 24)
+    }
+
+    // MARK: - Self-Hosted
+
+    private func connectSelfHosted() {
+        let url = selfHostedURL.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let token = selfHostedToken.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !url.isEmpty else {
+            errorMessage = "Enter your server URL."
+            return
+        }
+        guard !token.isEmpty else {
+            errorMessage = "Enter your pairing token."
+            return
+        }
+
+        isSigningIn = true
+        errorMessage = nil
+        storage.serverUrl = url
+
+        Task {
+            do {
+                // Verify the token by calling GET /pingclaw/location
+                var request = URLRequest(url: URL(string: "\(url)/pingclaw/location")!)
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                let (_, response) = try await URLSession.shared.data(for: request)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+                if status == 401 {
+                    errorMessage = "Invalid pairing token."
+                    isSigningIn = false
+                    return
+                }
+                if status != 200 {
+                    errorMessage = "Server returned \(status)."
+                    isSigningIn = false
+                    return
+                }
+
+                guard storage.savePairingToken(token) else {
+                    errorMessage = "Could not save the token."
+                    isSigningIn = false
+                    return
+                }
+                isSigningIn = false
+                onSignedIn()
+            } catch {
+                errorMessage = "Could not reach server: \(error.localizedDescription)"
+                isSigningIn = false
+            }
+        }
     }
 
     // MARK: - Apple Sign-In

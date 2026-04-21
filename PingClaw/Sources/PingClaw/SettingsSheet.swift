@@ -18,6 +18,8 @@ struct SettingsSheet: View {
     @State private var showPrivacyPolicy = false
     @State private var showTermsOfService = false
     @State private var chatGPTURL: String?
+    @State private var showServerUrl = false
+    @State private var serverUrlInput = ""
 
     var body: some View {
         ZStack {
@@ -290,6 +292,68 @@ struct SettingsSheet: View {
                     )
                     .padding(.horizontal, 24)
 
+                    // ADVANCED
+                    sectionHeader("Advanced")
+
+                    VStack(spacing: 0) {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showServerUrl.toggle()
+                            }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Server URL")
+                                    .font(.system(.body, design: .rounded, weight: .semibold))
+                                    .foregroundStyle(Color.pcText)
+                                if !showServerUrl {
+                                    Text("Configure a self-hosted PingClaw server.")
+                                        .font(.footnote)
+                                        .foregroundStyle(Color.pcText2)
+                                        .multilineTextAlignment(.leading)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                        }
+                        .accessibilityLabel("Server URL")
+                        .accessibilityHint("Expand to configure a custom server URL")
+
+                        if showServerUrl {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Set the server URL if you are running your own PingClaw server. Leave as the default for the hosted service.")
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.pcText2)
+
+                                TextField("https://pingclaw.me", text: $serverUrlInput)
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundStyle(Color.pcText)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .keyboardType(.URL)
+                                    .padding(12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.pcBorder, lineWidth: 1)
+                                    )
+                                    .onChange(of: serverUrlInput) { _, newValue in
+                                        storage.serverUrl = newValue
+                                    }
+
+                                Text("Default: https://pingclaw.me")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.pcText3)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.pcSurface)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pcBorder, lineWidth: 1))
+                    )
+                    .padding(.horizontal, 24)
+
                     Spacer(minLength: 40)
                 }
             }
@@ -334,6 +398,7 @@ struct SettingsSheet: View {
         }
         .onAppear {
             selectedMode = storage.updateMode
+            serverUrlInput = storage.serverUrl
         }
         .task {
             await fetchConfig()

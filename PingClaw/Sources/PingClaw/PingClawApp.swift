@@ -1,7 +1,31 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
+
+/// Detects when iOS relaunches the app for a significant location change
+/// after the process was terminated. LocationManager.init() already
+/// resumes tracking via storage.isTracking, so no extra work is needed
+/// here — this just enables the relaunch pathway.
+#if os(iOS)
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        #if DEBUG
+        if launchOptions?[.location] != nil {
+            print("[PingClaw] Launched by location event")
+        }
+        #endif
+        return true
+    }
+}
+#endif
 
 @main
 struct PingClawApp: App {
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #endif
     @State private var storage = StorageService()
     @State private var locationManager: LocationManager
     @State private var showPairingSuccess = false

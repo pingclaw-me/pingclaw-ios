@@ -19,7 +19,6 @@ targets:
           - "Resources/**"
       - path: Sources/BundleShim.swift
       - path: Assets.xcassets
-    resources:
       - path: ../PingClaw/Sources/PingClaw/Resources/Fonts
         buildPhase: resources
       - path: ../PingClaw/Sources/PingClaw/Resources/PrivacyInfo.xcprivacy
@@ -35,15 +34,13 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.pingclaw.app
-        INFOPLIST_FILE: ../PingClaw/PingClaw-Info.plist
-        CODE_SIGN_ENTITLEMENTS: ../PingClaw/PingClaw.entitlements
+        INFOPLIST_FILE: PingClaw-Info.plist
+        CODE_SIGN_ENTITLEMENTS: PingClaw.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: 74JC6TTWQ8
         MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "3"
+        CURRENT_PROJECT_VERSION: "8"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: false
         SWIFT_EMIT_LOC_STRINGS: true
-    entitlements:
-      path: ../PingClaw/PingClaw.entitlements

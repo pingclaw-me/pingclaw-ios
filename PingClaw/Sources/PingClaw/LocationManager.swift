@@ -105,9 +105,10 @@ final class LocationManager: NSObject {
         case .significant:
             clManager.startMonitoringSignificantLocationChanges()
         case .adaptive, .continuous:
-            // Continuous mode relies on streaming plus in-handleLocation
-            // throttling to `continuousPostInterval` — no separate timer.
             clManager.startUpdatingLocation()
+            // Also register for significant changes as a fallback —
+            // if iOS terminates the app, this ensures relaunch.
+            clManager.startMonitoringSignificantLocationChanges()
         }
 
         isTracking = true

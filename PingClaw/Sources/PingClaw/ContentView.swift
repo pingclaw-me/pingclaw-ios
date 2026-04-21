@@ -10,9 +10,6 @@ struct ContentView: View {
     @State private var timer: Timer?
     @State private var shareCooldown = false
     @State private var isSignedIn = false
-    #if DEBUG
-    @State private var serverUrl = ""
-    #endif
 
     var body: some View {
         ZStack {
@@ -152,33 +149,6 @@ struct ContentView: View {
                 } // end "if storage.getPairingToken() != nil"
 
                 Spacer()
-
-                #if DEBUG
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("SERVER URL")
-                        .font(.caption2.weight(.semibold))
-                        .tracking(1.4)
-                        .foregroundStyle(Color.pcText3)
-                    TextField("Server URL", text: $serverUrl)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(Color.pcText)
-                        .padding(10)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.pcSurface)
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.pcBorder, lineWidth: 1))
-                        )
-                        .onChange(of: serverUrl) { _, newValue in
-                            storage.serverUrl = newValue
-                        }
-                        .onAppear { serverUrl = storage.serverUrl }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-                #endif
             }
         }
         .sheet(isPresented: $showSettings, onDismiss: {
