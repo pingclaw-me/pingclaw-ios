@@ -145,19 +145,14 @@ struct SignInView: View {
                     .buttonStyle(.plain)
 
                     // Legal
-                    HStack(spacing: 0) {
-                        Text("By continuing, you agree to the ")
-                        Text("Terms").underline()
-                        Text(" and ")
-                        Text("Privacy Policy").underline()
-                        Text(".")
-                    }
-                    .font(Typography.caption(11))
-                    .foregroundStyle(Color.inkFaint)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 22)
+                    Text("By continuing, you agree to the [Terms](https://pingclaw.me/termsofservice) and [Privacy Policy](https://pingclaw.me/privacypolicy).")
+                        .font(Typography.caption(11))
+                        .foregroundStyle(Color.inkFaint)
+                        .tint(Color.inkSoft)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 22)
 
                     Spacer(minLength: 40)
                 }
