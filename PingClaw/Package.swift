@@ -17,16 +17,11 @@ let package = Package(
         .target(
             name: "PingClaw",
             resources: [
-                // Syne — Bonjour Monde, OFL-licensed.
-                // Variable font (weight axis 400–800) used for the PingClaw wordmark.
+                // Fonts — Fraunces (display), Inter Tight (body), JetBrains Mono (values).
+                // All variable weight, OFL-licensed.
                 .copy("Resources/Fonts"),
                 // Apple-required privacy manifest (iOS 17+).
                 .copy("Resources/PrivacyInfo.xcprivacy"),
-                // Branding images for splash and main screens.
-                .copy("Resources/Hero.png"),
-                .copy("Resources/HeroLight.png"),
-                .copy("Resources/Wordmark.png"),
-                .copy("Resources/WordmarkLight.png"),
             ]
         ),
     ]

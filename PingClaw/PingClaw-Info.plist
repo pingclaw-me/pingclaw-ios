@@ -52,7 +52,13 @@
 			</array>
 		</dict>
 	</array>
-<key>UILaunchScreen</key>
+<key>UIAppFonts</key>
+	<array>
+		<string>Fraunces-VF.ttf</string>
+		<string>InterTight-VF.ttf</string>
+		<string>JetBrainsMono-VF.ttf</string>
+	</array>
+	<key>UILaunchScreen</key>
 	<dict/>
 </dict>
 </plist>
