@@ -133,9 +133,7 @@ struct ContentView: View {
                         .foregroundStyle(Color.inkSoft)
                 }
                 Spacer()
-                if locationManager.isTracking {
-                    PillView()
-                }
+                PillView(isOn: locationManager.isTracking)
             }
             .padding(Spacing.cardPadH)
             .background(Color.paperWarm)

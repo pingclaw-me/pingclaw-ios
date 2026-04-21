@@ -310,28 +310,31 @@ struct RowDivider: View {
 // MARK: - On pill
 
 struct PillView: View {
+    var isOn: Bool = true
     @State private var pulse = false
 
     var body: some View {
         HStack(spacing: 6) {
-            Circle()
-                .fill(Color.rust)
-                .frame(width: 6, height: 6)
-                .opacity(pulse ? 0.5 : 1.0)
-                .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: pulse)
-            Text("ON")
+            if isOn {
+                Circle()
+                    .fill(Color.rust)
+                    .frame(width: 6, height: 6)
+                    .opacity(pulse ? 0.5 : 1.0)
+                    .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: pulse)
+            }
+            Text(isOn ? "ON" : "OFF")
                 .font(Typography.monoSmall())
                 .tracking(1)
-                .foregroundStyle(Color.rust)
+                .foregroundStyle(isOn ? Color.rust : Color.inkFaint)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.paper)
         .overlay(
-            Capsule().stroke(Color.rust, lineWidth: 1)
+            Capsule().stroke(isOn ? Color.rust : Color.inkGhost, lineWidth: 1)
         )
         .clipShape(Capsule())
-        .onAppear { pulse = true }
+        .onAppear { if isOn { pulse = true } }
     }
 }
 
