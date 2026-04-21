@@ -4,179 +4,185 @@ import Foundation
 import SwiftUI
 
 /// The sign-in screen shown when no pairing token exists. Offers Sign
-/// in with Apple (native) and Sign in with Google (via browser sheet).
-/// On success, stores the pairing_token in the keychain and calls the
-/// `onSignedIn` closure.
+/// in with Apple (native), Sign in with Google (via browser PKCE), and
+/// self-hosted token pairing.
 struct SignInView: View {
     var storage: StorageService
     var onSignedIn: () -> Void
 
     @State private var isSigningIn = false
     @State private var errorMessage: String?
-    @State private var showSelfHosted = false
-    @State private var selfHostedURL = ""
-    @State private var selfHostedToken = ""
+    @State private var showSelfHost = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Sign in with Apple — native button
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = []
-            } onCompletion: { result in
-                handleAppleResult(result)
-            }
-            .signInWithAppleButtonStyle(.whiteOutline)
-            .frame(height: 50)
-            .cornerRadius(8)
-            .accessibilityLabel("Sign in with Apple")
+        ZStack {
+            Color.paper.ignoresSafeArea()
 
-            // Sign in with Google — styled to match Apple button
-            Button {
-                startGoogleSignIn()
-            } label: {
-                HStack(spacing: 8) {
-                    Text("G")
-                        .font(.title3.bold())
-                    Text("Sign in with Google")
-                        .font(.body.weight(.medium))
-                }
-                .foregroundStyle(.black)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.white.opacity(0.8), lineWidth: 1)
-                )
-                .cornerRadius(8)
-            }
-            .disabled(isSigningIn)
-            .accessibilityLabel("Sign in with Google")
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    Spacer(minLength: 40)
 
-            if isSigningIn {
-                ProgressView()
-                    .tint(Color.pcAccent)
-                    .padding(.top, 8)
-            }
+                    // Wordmark
+                    WordmarkView(size: .medium)
+                        .padding(.bottom, 28)
+                        .padding(.horizontal, 24)
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(Color.pcError)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 4)
-            }
-
-            // Self-hosted server
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showSelfHosted.toggle()
-                }
-            } label: {
-                Text("Self-Hosted Server")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(Color.pcText3)
-            }
-            .padding(.top, 8)
-
-            if showSelfHosted {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Connect to your own PingClaw server.")
-                        .font(.footnote)
-                        .foregroundStyle(Color.pcText2)
-
-                    TextField("http://192.168.1.100:8080", text: $selfHostedURL)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(Color.pcText)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .keyboardType(.URL)
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.pcBorder, lineWidth: 1)
-                        )
-
-                    TextField("pt_...", text: $selfHostedToken)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(Color.pcText)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.pcBorder, lineWidth: 1)
-                        )
-
-                    Button {
-                        connectSelfHosted()
-                    } label: {
-                        Text("Connect")
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(Color.pcAccent)
-                            .cornerRadius(8)
+                    // Headline
+                    HStack(spacing: 0) {
+                        Text("A quiet ")
+                            .foregroundStyle(Color.ink)
+                        Text("location source")
+                            .foregroundStyle(Color.rust)
+                            .italic()
+                        Text("\nfor your AI agent.")
+                            .foregroundStyle(Color.ink)
                     }
-                    .disabled(isSigningIn)
+                    .font(Typography.display(34, weight: .regular))
+                    .lineSpacing(2)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+
+                    // Subtitle
+                    Text("Install once. Your agent knows where you are — until you decide it shouldn't.")
+                        .font(Typography.body(14))
+                        .foregroundStyle(Color.inkSoft)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 36)
+
+                    // Trust bullets
+                    VStack(alignment: .leading, spacing: 4) {
+                        trustBullet("Coordinates only, never a map")
+                        trustBullet("Cached for 24 hours, never stored in a database")
+                        trustBullet("Delete everything any time")
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 32)
+
+                    // Sign in buttons
+                    VStack(spacing: 10) {
+                        // Apple
+                        SignInWithAppleButton(.signIn) { request in
+                            request.requestedScopes = []
+                        } onCompletion: { result in
+                            handleAppleResult(result)
+                        }
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(height: 50)
+                        .cornerRadius(Spacing.buttonRadius)
+                        .accessibilityLabel("Sign in with Apple")
+
+                        // Google
+                        Button { startGoogleSignIn() } label: {
+                            HStack(spacing: 8) {
+                                Text("G").font(.system(size: 16, weight: .bold))
+                                Text("Sign in with Google")
+                                    .font(Typography.body(15, weight: .medium))
+                            }
+                            .foregroundStyle(Color.ink)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Spacing.buttonRadius)
+                                    .stroke(Color.ink, lineWidth: 1)
+                            )
+                        }
+                        .disabled(isSigningIn)
+                        .accessibilityLabel("Sign in with Google")
+                    }
+                    .padding(.horizontal, 24)
+
+                    // Loading / error
+                    if isSigningIn {
+                        HStack {
+                            Spacer()
+                            ProgressView().tint(Color.rust)
+                            Spacer()
+                        }
+                        .padding(.top, 16)
+                    }
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(Typography.caption(12))
+                            .foregroundStyle(Color.red)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 8)
+                            .padding(.horizontal, 24)
+                    }
+
+                    // Self-hosting divider
+                    HStack(spacing: 12) {
+                        Rectangle().fill(Color.rule).frame(height: 1)
+                        Text("OR SELF-HOSTING")
+                            .font(Typography.monoSmall())
+                            .tracking(1.3)
+                            .foregroundStyle(Color.inkFaint)
+                        Rectangle().fill(Color.rule).frame(height: 1)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 18)
+
+                    // Self-host row
+                    Button { showSelfHost = true } label: {
+                        HStack(alignment: .top, spacing: 14) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Connect to your own server")
+                                    .font(Typography.rowTitle())
+                                    .foregroundStyle(Color.ink)
+                                Text("No Apple or Google account needed")
+                                    .font(Typography.caption(12))
+                                    .foregroundStyle(Color.inkSoft)
+                            }
+                            Spacer()
+                            Text("\u{203A}")
+                                .font(.custom("Fraunces", size: 18))
+                                .foregroundStyle(Color.inkGhost)
+                                .padding(.top, 2)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Legal
+                    HStack(spacing: 0) {
+                        Text("By continuing, you agree to the ")
+                        Text("Terms").underline()
+                        Text(" and ")
+                        Text("Privacy Policy").underline()
+                        Text(".")
+                    }
+                    .font(Typography.caption(11))
+                    .foregroundStyle(Color.inkFaint)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
+
+                    Spacer(minLength: 40)
                 }
-                .padding(.top, 4)
             }
         }
-        .padding(.horizontal, 24)
+        .navigationDestination(isPresented: $showSelfHost) {
+            SelfHostView(storage: storage, onSignedIn: onSignedIn)
+                .navigationBarHidden(true)
+        }
     }
 
-    // MARK: - Self-Hosted
+    // MARK: - Trust bullet
 
-    private func connectSelfHosted() {
-        let url = selfHostedURL.trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let token = selfHostedToken.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !url.isEmpty else {
-            errorMessage = "Enter your server URL."
-            return
-        }
-        guard !token.isEmpty else {
-            errorMessage = "Enter your pairing token."
-            return
-        }
-
-        isSigningIn = true
-        errorMessage = nil
-        storage.serverUrl = url
-
-        Task {
-            do {
-                // Verify the token by calling GET /pingclaw/location
-                var request = URLRequest(url: URL(string: "\(url)/pingclaw/location")!)
-                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                let (_, response) = try await URLSession.shared.data(for: request)
-                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-
-                if status == 401 {
-                    errorMessage = "Invalid pairing token."
-                    isSigningIn = false
-                    return
-                }
-                if status != 200 {
-                    errorMessage = "Server returned \(status)."
-                    isSigningIn = false
-                    return
-                }
-
-                guard storage.savePairingToken(token) else {
-                    errorMessage = "Could not save the token."
-                    isSigningIn = false
-                    return
-                }
-                isSigningIn = false
-                onSignedIn()
-            } catch {
-                errorMessage = "Could not reach server: \(error.localizedDescription)"
-                isSigningIn = false
-            }
+    private func trustBullet(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Rectangle()
+                .fill(Color.rust)
+                .frame(width: 10, height: 1)
+                .padding(.top, 9)
+            Text(text)
+                .font(Typography.caption())
+                .foregroundStyle(Color.inkSoft)
+                .lineSpacing(2)
         }
     }
 
@@ -194,7 +200,6 @@ struct SignInView: View {
             sendToServer(provider: "apple", idToken: idToken)
 
         case .failure(let error):
-            // ASAuthorizationError.canceled is normal (user dismissed)
             if (error as? ASAuthorizationError)?.code == .canceled { return }
             errorMessage = "Apple sign-in failed: \(error.localizedDescription)"
         }
@@ -211,13 +216,10 @@ struct SignInView: View {
             return
         }
 
-        // iOS-type Google client IDs use the reversed client ID as the
-        // redirect scheme and require PKCE (no client secret).
         let reversedClientID = clientID.components(separatedBy: ".").reversed().joined(separator: ".")
         let redirectScheme = reversedClientID
         let redirectURI = "\(reversedClientID):/oauthredirect"
 
-        // PKCE: generate code_verifier + code_challenge
         let codeVerifier = generateCodeVerifier()
         let codeChallenge = sha256Base64URL(codeVerifier)
 
@@ -253,11 +255,9 @@ struct SignInView: View {
         session.prefersEphemeralWebBrowserSession = true
         session.presentationContextProvider = WebAuthContextProvider.shared
         session.start()
-        webAuthSession = session // retain
+        webAuthSession = session
     }
 
-    /// Exchanges the authorization code for an id_token at Google's
-    /// token endpoint, then sends the id_token to our server.
     private func exchangeGoogleCode(_ code: String, clientID: String, redirectURI: String, codeVerifier: String) {
         isSigningIn = true
         Task {
@@ -343,7 +343,7 @@ private final class WebAuthContextProvider: NSObject, ASWebAuthenticationPresent
     }
 }
 
-// MARK: - Base64-URL encoding (no padding, URL-safe alphabet)
+// MARK: - Base64-URL encoding
 
 private extension Data {
     func base64URLEncoded() -> String {

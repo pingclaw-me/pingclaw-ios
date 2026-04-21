@@ -33,8 +33,8 @@ struct PingClawApp: App {
     @State private var showSplash = true
 
     init() {
-        // Register the bundled Syne font so PingClawWordmark can use it.
-        // Touching the static `register` constant runs the registration once.
+        // Register bundled fonts (Fraunces, Inter Tight, JetBrains Mono).
+        // Touching the static `register` constant runs registration once.
         _ = PingClawFonts.register
 
         let s = StorageService()

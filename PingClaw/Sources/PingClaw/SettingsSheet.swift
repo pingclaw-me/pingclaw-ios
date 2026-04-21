@@ -8,367 +8,165 @@ struct SettingsSheet: View {
     var storage: StorageService
     @Environment(\.dismiss) private var dismiss
 
-    @State private var webCodeLoading = false
-    @State private var webCode: String?
-    @State private var webCodeCopied = false
     @State private var selectedMode: UpdateMode = .adaptive
     @State private var showSignOutConfirm = false
     @State private var showDeleteConfirm = false
-    @State private var deleteError: String?
-    @State private var showPrivacyPolicy = false
-    @State private var showTermsOfService = false
-    @State private var chatGPTURL: String?
+    @State private var showPrivacy = false
+    @State private var showTerms = false
+    @State private var showPairingCode = false
     @State private var showServerUrl = false
-    @State private var serverUrlInput = ""
+    @State private var chatGPTURL: String?
 
     var body: some View {
         ZStack {
-            Color.pcBg.ignoresSafeArea()
+            Color.paper.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    // Header
-                    HStack {
-                        Text("Settings")
-                            .font(.system(.title3, design: .rounded, weight: .heavy))
-                            .foregroundStyle(Color.pcText)
-                            .accessibilityAddTraits(.isHeader)
-                        Spacer()
-                        Button { dismiss() } label: {
-                            Text("Done")
-                                .font(.body.weight(.medium))
-                                .foregroundStyle(Color.pcAccent)
+                    // Back link
+                    BackLink(title: "Home") { dismiss() }
+                        .padding(.horizontal, Spacing.screenH)
+                        .padding(.top, 6)
+                        .padding(.bottom, 20)
+
+                    // Title
+                    Text("Settings")
+                        .font(Typography.display(34))
+                        .foregroundStyle(Color.ink)
+                        .padding(.horizontal, Spacing.screenH)
+                        .padding(.bottom, 6)
+
+                    // Subtitle
+                    Text("Signed in via \(storage.serverUrl.replacingOccurrences(of: "https://", with: ""))")
+                        .font(Typography.mono(12))
+                        .foregroundStyle(Color.inkFaint)
+                        .padding(.horizontal, Spacing.screenH)
+                        .padding(.bottom, 26)
+
+                    // UPDATE MODE
+                    SectionLabel(title: "Update mode")
+                        .padding(.horizontal, Spacing.screenH)
+
+                    SettingsGroup {
+                        ForEach(Array(UpdateMode.allCases.enumerated()), id: \.element) { index, mode in
+                            updateModeRow(mode: mode, isSelected: selectedMode == mode)
+                            if index < UpdateMode.allCases.count - 1 {
+                                RowDivider()
+                            }
                         }
-                        .accessibilityLabel("Done")
-                        .accessibilityHint("Closes settings")
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-                    .padding(.bottom, 28)
-
-                    // WEB LOGIN CODE
-                    if storage.getPairingToken() != nil {
-                        sectionHeader("Web dashboard")
-
-                        VStack(spacing: 0) {
-                            // Open Dashboard
-                            Button {
-                                openDashboard()
-                            } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Open Dashboard")
-                                            .font(.system(.body, design: .rounded, weight: .semibold))
-                                            .foregroundStyle(Color.pcText)
-                                        Text("Set up MCP agents, webhooks, and manage your API key.")
-                                            .font(.footnote)
-                                            .foregroundStyle(Color.pcText2)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                    Spacer()
-                                    if webCodeLoading {
-                                        ProgressView().tint(Color.pcAccent)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(16)
-                            }
-                            .disabled(webCodeLoading)
-                            .accessibilityLabel("Open Dashboard")
-                            .accessibilityHint("Opens the web dashboard in Safari, automatically signed in")
-
-                            Divider().overlay(Color.pcBorder).padding(.leading, 16)
-
-                            // Generate sign-in code
-                            if let webCode {
-                                Button {
-                                    #if os(iOS)
-                                    UIPasteboard.general.string = webCode
-                                    #endif
-                                    webCodeCopied = true
-                                    Task {
-                                        try? await Task.sleep(nanoseconds: 2_000_000_000)
-                                        webCodeCopied = false
-                                    }
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Sign-in code:")
-                                            .font(.footnote)
-                                            .foregroundStyle(Color.pcText2)
-                                        Text(webCode)
-                                            .font(.system(.title, design: .monospaced, weight: .bold))
-                                            .foregroundStyle(Color.pcAccent)
-                                            .tracking(4)
-                                        Text(webCodeCopied ? "Copied!" : "Tap to copy. Expires in 5 minutes.")
-                                            .font(.caption)
-                                            .foregroundStyle(webCodeCopied ? Color.pcAccent : Color.pcText3)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                .accessibilityLabel("Web login code: \(webCode)")
-                                .accessibilityHint("Tap to copy to clipboard")
-                                .padding(16)
-
-                                Divider().overlay(Color.pcBorder).padding(.leading, 16)
-
-                                Button {
-                                    generateWebCode()
-                                } label: {
-                                    Text("Generate new code")
-                                        .font(.system(.body, design: .rounded, weight: .semibold))
-                                        .foregroundStyle(Color.pcAccent)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(16)
-                                }
-                                .disabled(webCodeLoading)
-                            } else {
-                                Button {
-                                    generateWebCode()
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Generate Sign-In Code")
-                                            .font(.system(.body, design: .rounded, weight: .semibold))
-                                            .foregroundStyle(Color.pcText)
-                                        Text("Creates a code you can type into any browser to sign in.")
-                                            .font(.footnote)
-                                            .foregroundStyle(Color.pcText2)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(16)
-                                }
-                                .disabled(webCodeLoading)
-                                .accessibilityLabel("Generate Sign-In Code")
-                                .accessibilityHint("Creates a code you can type into any browser to sign in to the dashboard")
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.pcSurface)
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pcBorder, lineWidth: 1))
-                        )
-                        .padding(.horizontal, 24)
-                    } // end web dashboard section
+                    .padding(.horizontal, Spacing.screenH)
 
                     // INTEGRATIONS
-                    if let chatGPTURL, let url = URL(string: chatGPTURL) {
-                        sectionHeader("Integrations")
+                    SectionLabel(title: "Integrations")
+                        .padding(.horizontal, Spacing.screenH)
 
-                        VStack(spacing: 0) {
-                            Button {
+                    SettingsGroup {
+                        if let chatGPTURL, let url = URL(string: chatGPTURL) {
+                            SettingsRow(
+                                title: "Open PingClaw GPT",
+                                subtitle: "One-tap setup for ChatGPT. After installing, open the GPT from ChatGPT as usual.",
+                                trailing: .external
+                            ) {
                                 #if os(iOS)
                                 UIApplication.shared.open(url)
                                 #endif
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Open PingClaw GPT")
-                                        .font(.system(.body, design: .rounded, weight: .semibold))
-                                        .foregroundStyle(Color.pcText)
-                                    Text("Opens ChatGPT with the PingClaw GPT. Authorize it to let ChatGPT read your location.")
-                                        .font(.footnote)
-                                        .foregroundStyle(Color.pcText2)
-                                        .multilineTextAlignment(.leading)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(16)
                             }
-                            .accessibilityLabel("Open PingClaw GPT")
-                            .accessibilityHint("Opens ChatGPT with the PingClaw integration")
+                            RowDivider()
                         }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.pcSurface)
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pcBorder, lineWidth: 1))
-                        )
-                        .padding(.horizontal, 24)
-                    }
-
-                    // UPDATE MODE
-                    sectionHeader("Update mode")
-
-                    VStack(spacing: 0) {
-                        ForEach(Array(UpdateMode.allCases.enumerated()), id: \.element) { index, mode in
-                            updateModeRow(mode: mode, isSelected: selectedMode == mode, isLast: index == UpdateMode.allCases.count - 1)
+                        SettingsRow(
+                            title: "Open dashboard on this phone",
+                            subtitle: "Mint API keys and configure MCP clients, webhooks, or OpenClaw. Signs in automatically.",
+                            trailing: .external
+                        ) {
+                            openDashboard()
+                        }
+                        RowDivider()
+                        SettingsRow(
+                            title: "Get a sign-in code for a computer",
+                            subtitle: "Use the dashboard on your laptop. Generates an 8-character code.",
+                            trailing: .chevron
+                        ) {
+                            showPairingCode = true
                         }
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.pcSurface)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pcBorder, lineWidth: 1))
-                    )
-                    .padding(.horizontal, 24)
-
+                    .padding(.horizontal, Spacing.screenH)
 
                     // ACCOUNT & DATA
-                    sectionHeader("Account & data")
+                    SectionLabel(title: "Account & data")
+                        .padding(.horizontal, Spacing.screenH)
 
-                    VStack(spacing: 0) {
-                        // Privacy Settings
-                        Button {
-                            showPrivacyPolicy = true
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Privacy Settings")
-                                    .font(.system(.body, design: .rounded, weight: .semibold))
-                                    .foregroundStyle(Color.pcText)
-                                Text("Review app privacy details and system permissions.")
-                                    .font(.footnote)
-                                    .foregroundStyle(Color.pcText2)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
+                    SettingsGroup {
+                        SettingsRow(
+                            title: "Privacy settings",
+                            subtitle: "Review app privacy details and system permissions.",
+                            trailing: .chevron
+                        ) {
+                            showPrivacy = true
                         }
-                        .accessibilityLabel("Privacy Policy")
-                        .accessibilityHint("Opens the privacy policy in a browser")
-
-                        Divider().overlay(Color.pcBorder).padding(.leading, 16)
-
-                        // Terms of Service
-                        Button {
-                            showTermsOfService = true
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Terms of Service")
-                                    .font(.system(.body, design: .rounded, weight: .semibold))
-                                    .foregroundStyle(Color.pcText)
-                                Text("Review the terms and conditions of use.")
-                                    .font(.footnote)
-                                    .foregroundStyle(Color.pcText2)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
+                        RowDivider()
+                        SettingsRow(
+                            title: "Terms of service",
+                            subtitle: "Review the terms and conditions of use.",
+                            trailing: .chevron
+                        ) {
+                            showTerms = true
                         }
-                        .accessibilityLabel("Terms of Service")
-                        .accessibilityHint("Opens the terms of service in a browser")
-
-                        Divider().overlay(Color.pcBorder).padding(.leading, 16)
-
-                        // Sign out (local only — clears keychain token)
-                        Button {
+                        RowDivider()
+                        SettingsRow(
+                            title: "Sign out",
+                            subtitle: "Clears your pairing token from this device.",
+                            style: .caution
+                        ) {
                             showSignOutConfirm = true
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Sign Out")
-                                    .font(.system(.body, design: .rounded, weight: .semibold))
-                                    .foregroundStyle(Color.pcWarning)
-                                Text("Clears your pairing token from this device. Your server account is not deleted.")
-                                    .font(.footnote)
-                                    .foregroundStyle(Color.pcText2)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
                         }
-                        .accessibilityLabel("Sign Out")
-                        .accessibilityHint("Clears your local credentials and returns to the sign-in screen")
-
-                        Divider().overlay(Color.pcBorder).padding(.leading, 16)
-
-                        // Delete All Data
-                        Button {
+                        RowDivider()
+                        SettingsRow(
+                            title: "Delete all data",
+                            subtitle: "Permanently delete your account and all stored data.",
+                            style: .destructive
+                        ) {
                             showDeleteConfirm = true
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Delete All Data")
-                                    .font(.system(.body, design: .rounded, weight: .semibold))
-                                    .foregroundStyle(Color.pcError)
-                                Text("Permanently delete your account and all stored data.")
-                                    .font(.footnote)
-                                    .foregroundStyle(Color.pcText2)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
                         }
-                        .accessibilityLabel("Delete All Data")
-                        .accessibilityHint("Permanently deletes your account and all stored data. This cannot be undone.")
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.pcSurface)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pcBorder, lineWidth: 1))
-                    )
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, Spacing.screenH)
 
                     // ADVANCED
-                    sectionHeader("Advanced")
+                    SectionLabel(title: "Advanced")
+                        .padding(.horizontal, Spacing.screenH)
 
-                    VStack(spacing: 0) {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showServerUrl.toggle()
-                            }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Server URL")
-                                    .font(.system(.body, design: .rounded, weight: .semibold))
-                                    .foregroundStyle(Color.pcText)
-                                if !showServerUrl {
-                                    Text("Configure a self-hosted PingClaw server.")
-                                        .font(.footnote)
-                                        .foregroundStyle(Color.pcText2)
-                                        .multilineTextAlignment(.leading)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
-                        }
-                        .accessibilityLabel("Server URL")
-                        .accessibilityHint("Expand to configure a custom server URL")
-
-                        if showServerUrl {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Set the server URL if you are running your own PingClaw server. Leave as the default for the hosted service.")
-                                    .font(.footnote)
-                                    .foregroundStyle(Color.pcText2)
-
-                                TextField("https://pingclaw.me", text: $serverUrlInput)
-                                    .font(.system(.body, design: .monospaced))
-                                    .foregroundStyle(Color.pcText)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                                    .keyboardType(.URL)
-                                    .padding(12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color.pcBorder, lineWidth: 1)
-                                    )
-                                    .onChange(of: serverUrlInput) { _, newValue in
-                                        storage.serverUrl = newValue
-                                    }
-
-                                Text("Default: https://pingclaw.me")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.pcText3)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
+                    SettingsGroup {
+                        SettingsRow(
+                            title: "Server URL",
+                            subtitle: storage.serverUrl.replacingOccurrences(of: "https://", with: ""),
+                            trailing: .chevron
+                        ) {
+                            showServerUrl = true
                         }
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.pcSurface)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.pcBorder, lineWidth: 1))
-                    )
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, Spacing.screenH)
 
                     Spacer(minLength: 40)
                 }
             }
         }
+        .navigationDestination(isPresented: $showPairingCode) {
+            PairingCodeView(storage: storage)
+                .navigationBarHidden(true)
+        }
+        .navigationDestination(isPresented: $showServerUrl) {
+            ServerURLView(storage: storage)
+                .navigationBarHidden(true)
+        }
         #if os(iOS)
-        .sheet(isPresented: $showPrivacyPolicy) {
+        .sheet(isPresented: $showPrivacy) {
             if let url = URL(string: "\(storage.serverUrl)/privacypolicy?embedded=1") {
-                SafariView(url: url)
-                    .ignoresSafeArea()
+                SafariView(url: url).ignoresSafeArea()
             }
         }
-        .sheet(isPresented: $showTermsOfService) {
+        .sheet(isPresented: $showTerms) {
             if let url = URL(string: "\(storage.serverUrl)/termsofservice?embedded=1") {
-                SafariView(url: url)
-                    .ignoresSafeArea()
+                SafariView(url: url).ignoresSafeArea()
             }
         }
         #endif
@@ -388,20 +186,41 @@ struct SettingsSheet: View {
         } message: {
             Text("This will permanently delete your account and all data from the server. This cannot be undone.")
         }
-        .alert("Error", isPresented: .init(
-            get: { deleteError != nil },
-            set: { if !$0 { deleteError = nil } }
-        )) {
-            Button("OK") { deleteError = nil }
-        } message: {
-            Text(deleteError ?? "")
-        }
         .onAppear {
             selectedMode = storage.updateMode
-            serverUrlInput = storage.serverUrl
         }
         .task {
             await fetchConfig()
+        }
+    }
+
+    // MARK: - Update mode row
+
+    private func updateModeRow(mode: UpdateMode, isSelected: Bool) -> some View {
+        SettingsRow(
+            title: mode.label,
+            subtitle: mode.settingsDescription,
+            trailing: isSelected ? .check : .none
+        ) {
+            selectedMode = mode
+            locationManager.changeMode(mode)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func openDashboard() {
+        let apiService = APIService(storage: storage)
+        Task {
+            do {
+                let code = try await apiService.requestWebCode()
+                let baseURL = storage.serverUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                if let url = URL(string: "\(baseURL)?webcode=\(code)") {
+                    #if os(iOS)
+                    await UIApplication.shared.open(url)
+                    #endif
+                }
+            } catch {}
         }
     }
 
@@ -411,105 +230,13 @@ struct SettingsSheet: View {
             do {
                 try await apiService.deleteAccount()
             } catch {
-                // Server delete may fail if the token is stale or the
-                // account no longer exists. That's OK — clear local
-                // state anyway so the user can re-sign-in.
-                slog("delete server call failed (clearing local state anyway): \(error)")
+                #if DEBUG
+                print("[PingClaw] delete failed (clearing local state): \(error)")
+                #endif
             }
             locationManager.stopTracking()
             storage.clearAll()
             dismiss()
-        }
-    }
-
-    private func slog(_ msg: String) {
-        // Lightweight debug log — not for production logging.
-        #if DEBUG
-        print("[PingClaw] \(msg)")
-        #endif
-    }
-
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title.uppercased())
-            .font(.caption.weight(.semibold))
-            .tracking(1.5)
-            .foregroundStyle(Color.pcAccent)
-            .padding(.horizontal, 24)
-            .padding(.top, 28)
-            .padding(.bottom, 10)
-    }
-
-    @ViewBuilder
-    private func updateModeRow(mode: UpdateMode, isSelected: Bool, isLast: Bool) -> some View {
-        Button {
-            selectedMode = mode
-            locationManager.changeMode(mode)
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(mode.label)
-                        .font(.system(.body, design: .rounded, weight: .semibold))
-                        .foregroundStyle(Color.pcText)
-                    Text(mode.settingsDescription)
-                        .font(.footnote)
-                        .foregroundStyle(Color.pcText2)
-                }
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Color.pcAccent)
-                        .accessibilityHidden(true)
-                }
-            }
-            .padding(16)
-        }
-        .accessibilityLabel(mode.label)
-        .accessibilityValue(isSelected ? "Selected" : "")
-        .accessibilityHint(mode.settingsDescription)
-
-        if !isLast {
-            Divider().overlay(Color.pcBorder).padding(.leading, 16)
-        }
-    }
-
-    private func generateWebCode() {
-        webCodeLoading = true
-        let apiService = APIService(storage: storage)
-        Task {
-            do {
-                let code = try await apiService.requestWebCode()
-                webCode = code
-                webCodeLoading = false
-                // Auto-clear after 5 minutes (matches server TTL).
-                Task {
-                    try? await Task.sleep(nanoseconds: 5 * 60 * 1_000_000_000)
-                    webCode = nil
-                }
-            } catch {
-                webCodeLoading = false
-            }
-        }
-    }
-
-    private func openDashboard() {
-        webCodeLoading = true
-        let apiService = APIService(storage: storage)
-        Task {
-            do {
-                let code = try await apiService.requestWebCode()
-                webCodeLoading = false
-                // Open Safari with the code in the URL — the website JS
-                // auto-submits it and lands directly on the dashboard.
-                let baseURL = storage.serverUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                if let url = URL(string: "\(baseURL)?webcode=\(code)") {
-                    #if os(iOS)
-                    await UIApplication.shared.open(url)
-                    #endif
-                }
-            } catch {
-                webCodeLoading = false
-            }
         }
     }
 
@@ -524,8 +251,55 @@ struct SettingsSheet: View {
                !gptURL.isEmpty {
                 chatGPTURL = gptURL
             }
-        } catch {
-            // Config fetch is best-effort; integrations section just won't show.
+        } catch {}
+    }
+}
+
+// MARK: - Server URL settings screen
+
+struct ServerURLView: View {
+    var storage: StorageService
+    @Environment(\.dismiss) private var dismiss
+    @State private var serverUrl = ""
+
+    var body: some View {
+        ZStack {
+            Color.paper.ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 0) {
+                BackLink(title: "Settings") { dismiss() }
+                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.top, 6)
+                    .padding(.bottom, 22)
+
+                Text("Server URL")
+                    .font(Typography.display(28))
+                    .foregroundStyle(Color.ink)
+                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.bottom, 10)
+
+                Text("Set the server URL if you are running your own pingclaw server. Leave as the default for the hosted service.")
+                    .font(Typography.caption())
+                    .foregroundStyle(Color.inkSoft)
+                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.bottom, 28)
+
+                FieldInput(
+                    label: "Server URL",
+                    text: $serverUrl,
+                    placeholder: "https://pingclaw.me",
+                    hint: "Default: https://pingclaw.me"
+                )
+                .padding(.horizontal, Spacing.screenH)
+                .onChange(of: serverUrl) { _, newValue in
+                    storage.serverUrl = newValue
+                }
+
+                Spacer()
+            }
+        }
+        .onAppear {
+            serverUrl = storage.serverUrl
         }
     }
 }
