@@ -4,7 +4,6 @@ import UIKit
 struct ContentView: View {
     @Bindable var locationManager: LocationManager
     var storage: StorageService
-    @Environment(\.colorScheme) private var colorScheme
     @State private var showSettings = false
     @State private var tick = 0
     @State private var timer: Timer?
@@ -12,149 +11,23 @@ struct ContentView: View {
     @State private var isSignedIn = false
 
     var body: some View {
-        ZStack {
-            Color.pcBg.ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color.paper.ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 0) {
-                // Header — settings button on the right (only when signed in)
                 if isSignedIn {
-                    HStack {
-                        Spacer()
-                        Button { showSettings = true } label: {
-                            Text("Settings")
-                                .font(.body)
-                                .foregroundStyle(Color.pcText2)
-                        }
-                        .accessibilityLabel("Settings")
-                        .accessibilityHint("Opens pairing token, update mode, and account settings")
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-                }
-
-                // Wordmark (includes tagline) — adaptive for light/dark
-                if let url = Bundle.module.url(forResource: colorScheme == .dark ? "Wordmark" : "WordmarkLight", withExtension: "png"),
-                   let data = try? Data(contentsOf: url),
-                   let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: 280)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 32)
-                        .accessibilityLabel("PingClaw — Location context for AI")
-                        .accessibilityAddTraits(.isHeader)
-                }
-
-                // Sign-in card — shown when no pairing token exists.
-                if !isSignedIn {
+                    homeView
+                } else {
                     SignInView(storage: storage) {
                         isSignedIn = true
                         locationManager.startTracking()
                     }
-                    .padding(.top, 32)
                 }
-
-                // Location Sharing card — shown once signed in.
-                if isSignedIn {
-                Button {
-                    handleToggle(!locationManager.isTracking)
-                } label: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Location Sharing")
-                                .font(.system(.title3, design: .rounded, weight: .bold))
-                                .foregroundStyle(Color.pcText)
-                            Spacer()
-                            statusPill(on: locationManager.isTracking)
-                        }
-
-                        Text(locationManager.isTracking
-                             ? "Tap to pause sharing from this device."
-                             : "Tap to start sharing from this device.")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.pcText2)
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Location Sharing")
-                .accessibilityValue(locationManager.isTracking ? "On" : "Off")
-                .accessibilityHint(locationManager.isTracking
-                    ? "Double-tap to pause sharing"
-                    : "Double-tap to start sharing")
-                .padding(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.pcSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.pcBorder, lineWidth: 1)
-                        )
-                )
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-
-                // Status cards + share button
-                if locationManager.isTracking {
-                    HStack(spacing: 12) {
-                        statCard(title: "Last update", value: formatTimeAgo(locationManager.lastUpdateTime))
-                        statCard(title: "Accuracy", value: formatAccuracy(locationManager.lastAccuracyMetres))
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
-
-                    Button {
-                        guard !shareCooldown else { return }
-                        locationManager.requestImmediatePing()
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            shareCooldown = true
-                        }
-                        Task {
-                            try? await Task.sleep(nanoseconds: 5_000_000_000)
-                            await MainActor.run {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    shareCooldown = false
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            if shareCooldown {
-                                Image(systemName: "checkmark.circle.fill")
-                            }
-                            Text(shareCooldown ? "Sent" : "Share Current Location Now")
-                        }
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(shareCooldown ? Color.pcText2 : Color.pcText)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(shareCooldown ? Color.pcSurface : Color.pcAccent3)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(shareCooldown ? Color.pcBorder2 : Color.pcAccent2, lineWidth: 1)
-                                )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(shareCooldown)
-                    .accessibilityLabel(shareCooldown ? "Location sent" : "Share current location now")
-                    .accessibilityHint(shareCooldown ? "Waiting before you can send again" : "Sends your current location to your agent immediately")
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
-                }
-                } // end "if storage.getPairingToken() != nil"
-
-                Spacer()
             }
-        }
-        .sheet(isPresented: $showSettings, onDismiss: {
-            isSignedIn = storage.getPairingToken() != nil
-        }) {
-            SettingsSheet(locationManager: locationManager, storage: storage)
+            .navigationDestination(isPresented: $showSettings) {
+                SettingsSheet(locationManager: locationManager, storage: storage)
+                    .navigationBarHidden(true)
+            }
         }
         .onAppear {
             isSignedIn = storage.getPairingToken() != nil
@@ -163,55 +36,124 @@ struct ContentView: View {
         .onDisappear { stopTimer() }
     }
 
-    private func statusPill(on: Bool) -> some View {
-        HStack(spacing: 6) {
-            if on {
-                Circle()
-                    .fill(Color.pcAccent)
-                    .frame(width: 6, height: 6)
-                    .accessibilityHidden(true)
+    // MARK: - Home (signed in)
+
+    private var homeView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header — Settings link top-right
+                HStack {
+                    Spacer()
+                    Button { showSettings = true } label: {
+                        Text("Settings")
+                            .font(Typography.body(15, weight: .medium))
+                            .foregroundStyle(Color.rust)
+                    }
+                    .accessibilityLabel("Settings")
+                    .accessibilityHint("Opens settings")
+                }
+                .padding(.horizontal, Spacing.screenH)
+                .padding(.top, 6)
+
+                // Wordmark
+                VStack(spacing: 14) {
+                    WordmarkView(size: .large)
+                    tagline
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 40)
+
+                // Location Sharing card
+                locationSharingCard
+                    .padding(.horizontal, Spacing.screenH)
+
+                // Meta pair + share button (when tracking)
+                if locationManager.isTracking {
+                    HStack(spacing: 10) {
+                        MetaBox(label: "Last update", value: formatTimeAgo(locationManager.lastUpdateTime), small: true)
+                        MetaBox(label: "Accuracy", value: formatAccuracy(locationManager.lastAccuracyMetres))
+                    }
+                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.top, 14)
+
+                    PrimaryButton(title: shareCooldown ? "Sent" : "Share location now") {
+                        handleShareNow()
+                    }
+                    .disabled(shareCooldown)
+                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.top, 14)
+
+                    // Helper line
+                    HStack(spacing: 0) {
+                        Text("\u{25CF} ")
+                            .font(Typography.caption(11))
+                            .foregroundStyle(Color.moss)
+                        Text("Coordinates only  \u{00B7}  24-hour TTL  \u{00B7}  no history")
+                            .font(Typography.caption(11))
+                            .foregroundStyle(Color.inkFaint)
+                    }
+                    .padding(.top, 14)
+                }
+
+                Spacer(minLength: 40)
             }
-            Text(on ? "ON" : "OFF")
-                .font(.system(.caption2, design: .monospaced, weight: .medium))
-                .tracking(0.8)
-                .foregroundStyle(on ? Color.pcAccent : Color.pcText3)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-            Capsule()
-                .fill(on ? Color.pcAccentBg : Color.pcSurface2)
-                .overlay(
-                    Capsule()
-                        .stroke(on ? Color.pcAccent3 : Color.pcBorder2, lineWidth: 1)
-                )
-        )
-        .accessibilityHidden(true)
     }
 
-    private func statCard(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.caption2.weight(.medium))
-                .tracking(1.4)
-                .foregroundStyle(Color.pcText3)
-            Text(value)
-                .font(.system(.callout, design: .monospaced, weight: .medium))
-                .foregroundStyle(Color.pcText)
+    // MARK: - Tagline
+
+    private var tagline: some View {
+        HStack(spacing: 0) {
+            Text("LOCATION CONTEXT FOR ")
+                .foregroundStyle(Color.inkFaint)
+            Text("ANY")
+                .foregroundStyle(Color.rust)
+            Text(" AI AGENT")
+                .foregroundStyle(Color.inkFaint)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.pcSurface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.pcBorder, lineWidth: 1)
-                )
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title): \(value)")
+        .font(Typography.monoSmall(9))
+        .tracking(2.5)
     }
+
+    // MARK: - Location sharing card
+
+    private var locationSharingCard: some View {
+        Button {
+            handleToggle(!locationManager.isTracking)
+        } label: {
+            HStack(alignment: .top, spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Location Sharing")
+                        .font(Typography.title(22))
+                        .foregroundStyle(Color.ink)
+                    Text(locationManager.isTracking
+                         ? "Tap to pause sharing from this device."
+                         : "Tap to start sharing from this device.")
+                        .font(Typography.caption())
+                        .foregroundStyle(Color.inkSoft)
+                }
+                Spacer()
+                if locationManager.isTracking {
+                    PillView()
+                }
+            }
+            .padding(Spacing.cardPadH)
+            .background(Color.paperWarm)
+            .clipShape(RoundedRectangle(cornerRadius: Spacing.cardRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: Spacing.cardRadius)
+                    .stroke(Color.rule, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Location Sharing")
+        .accessibilityValue(locationManager.isTracking ? "On" : "Off")
+        .accessibilityHint(locationManager.isTracking
+            ? "Double-tap to pause sharing"
+            : "Double-tap to start sharing")
+    }
+
+    // MARK: - Actions
 
     private func handleToggle(_ value: Bool) {
         if value {
@@ -224,6 +166,25 @@ struct ContentView: View {
             locationManager.stopTracking()
         }
     }
+
+    private func handleShareNow() {
+        guard !shareCooldown else { return }
+        locationManager.requestImmediatePing()
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            shareCooldown = true
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    shareCooldown = false
+                }
+            }
+        }
+    }
+
+    // MARK: - Timer
 
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
@@ -241,6 +202,8 @@ struct ContentView: View {
         timer = nil
     }
 
+    // MARK: - Formatting
+
     private func formatTimeAgo(_ date: Date?) -> String {
         let _ = tick
         guard let date else { return "--" }
@@ -254,6 +217,6 @@ struct ContentView: View {
 
     private func formatAccuracy(_ metres: Double) -> String {
         if metres <= 0 { return "--" }
-        return "± \(Int(metres))m"
+        return "\u{00B1} \(Int(metres))m"
     }
 }
