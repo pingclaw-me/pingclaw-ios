@@ -28,15 +28,13 @@ struct SignInView: View {
                         .padding(.horizontal, 24)
 
                     // Headline
-                    HStack(spacing: 0) {
-                        Text("A quiet ")
-                            .foregroundStyle(Color.ink)
-                        Text("location source")
-                            .foregroundStyle(Color.rust)
-                            .italic()
-                        Text("\nfor your AI agent.")
-                            .foregroundStyle(Color.ink)
-                    }
+                    (Text("A quiet ")
+                        .foregroundColor(Color.ink)
+                     + Text("location source")
+                        .foregroundColor(Color.rust)
+                        .italic()
+                     + Text(" for your AI agent.")
+                        .foregroundColor(Color.ink))
                     .font(Typography.display(34, weight: .regular))
                     .lineSpacing(2)
                     .padding(.horizontal, 24)
