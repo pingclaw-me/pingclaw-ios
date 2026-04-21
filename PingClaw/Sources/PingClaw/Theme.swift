@@ -4,149 +4,528 @@ import SwiftUI
 import UIKit
 #endif
 
-// PingClaw — Adaptive color palette supporting light and dark mode.
-// Dark values match the web style guide CSS variables.
-// Light values are designed for WCAG contrast on white backgrounds.
+// MARK: - Color palette
 
-private func adaptive(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> Color {
+// Adaptive colors that resolve to light/dark automatically.
+// Values match the design mockup CSS variables exactly.
+
+private func adaptive(light: UInt32, dark: UInt32) -> Color {
     #if os(iOS)
     Color(UIColor { traits in
-        let (r, g, b) = traits.userInterfaceStyle == .dark ? dark : light
-        return UIColor(red: r/255, green: g/255, blue: b/255, alpha: 1)
+        let hex = traits.userInterfaceStyle == .dark ? dark : light
+        return UIColor(
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: 1
+        )
     })
     #else
-    Color(red: dark.0/255, green: dark.1/255, blue: dark.2/255)
+    let hex = dark
+    return Color(
+        red: Double((hex >> 16) & 0xFF) / 255,
+        green: Double((hex >> 8) & 0xFF) / 255,
+        blue: Double(hex & 0xFF) / 255
+    )
     #endif
 }
 
 extension Color {
     // Backgrounds
-    static let pcBg       = adaptive(light: (242, 247, 246), dark: (8, 14, 12))       // #f2f7f6 / #080e0c
-    static let pcSurface  = adaptive(light: (255, 255, 255), dark: (15, 26, 24))      // #ffffff / #0f1a18
-    static let pcSurface2 = adaptive(light: (232, 240, 238), dark: (22, 40, 36))      // #e8f0ee / #162824
-    static let pcSurface3 = adaptive(light: (220, 230, 228), dark: (30, 53, 48))      // #dce6e4 / #1e3530
-
-    // Borders
-    static let pcBorder   = adaptive(light: (200, 216, 212), dark: (26, 46, 42))      // #c8d8d4 / #1a2e2a
-    static let pcBorder2  = adaptive(light: (176, 196, 190), dark: (36, 62, 56))      // #b0c4be / #243e38
-
-    // Accent — teal (darkened in light mode for contrast on white)
-    static let pcAccent   = adaptive(light: (0, 158, 130), dark: (0, 194, 160))       // #009e82 / #00c2a0
-    static let pcAccent2  = adaptive(light: (0, 122, 102), dark: (0, 133, 110))       // #007a66 / #00856e
-    static let pcAccent3  = adaptive(light: (224, 245, 240), dark: (0, 96, 79))       // #e0f5f0 / #00604f
-    static let pcAccentBg = adaptive(light: (232, 248, 244), dark: (7, 26, 22))       // #e8f8f4 / #071a16
+    static let paper     = adaptive(light: 0xFAF8F4, dark: 0x0E0D0B)
+    static let paperWarm = adaptive(light: 0xF3EFE6, dark: 0x1A1815)
+    static let paperDeep = adaptive(light: 0xEAE4D4, dark: 0x232019)
 
     // Text
-    static let pcText     = adaptive(light: (10, 30, 26), dark: (192, 240, 232))      // #0a1e1a / #c0f0e8
-    static let pcText2    = adaptive(light: (61, 92, 84), dark: (122, 184, 172))      // #3d5c54 / #7ab8ac
-    static let pcText3    = adaptive(light: (107, 143, 134), dark: (61, 110, 102))    // #6b8f86 / #3d6e66
-    static let pcText4    = adaptive(light: (155, 181, 174), dark: (32, 72, 64))      // #9bb5ae / #204840
+    static let ink       = adaptive(light: 0x161513, dark: 0xEDE7D9)
+    static let inkSoft   = adaptive(light: 0x3B3936, dark: 0xB8B0A0)
+    static let inkFaint  = adaptive(light: 0x84817B, dark: 0x6B665D)
+    static let inkGhost  = adaptive(light: 0xBAB5AA, dark: 0x48453F)
+
+    // Borders
+    static let rule      = adaptive(light: 0xE5DFD2, dark: 0x2A2825)
+
+    // Accent
+    static let rust      = adaptive(light: 0xB8472C, dark: 0xE8704F)
+    static let rustSoft  = adaptive(light: 0xD96C52, dark: 0xF08A6B)
 
     // Semantic
-    static let pcWarning  = adaptive(light: (158, 122, 0), dark: (200, 154, 26))      // #9e7a00 / #c89a1a
-    static let pcError    = adaptive(light: (184, 48, 48), dark: (200, 64, 64))       // #b83030 / #c84040
-    static let pcErrorBg  = adaptive(light: (253, 234, 234), dark: (26, 8, 8))        // #fdeaea / #1a0808
+    static let moss      = adaptive(light: 0x5A6B3E, dark: 0x9BB072)
+    static let amber     = adaptive(light: 0xB87D2C, dark: 0xD89A4C)
+    static let red       = adaptive(light: 0xC23B2C, dark: 0xE06859)
+
+    // Legacy aliases (keep temporarily while migrating views)
+    static let pcBg      = paper
+    static let pcSurface = paperWarm
+    static let pcBorder  = rule
+    static let pcAccent  = rust
+    static let pcText    = ink
+    static let pcText2   = inkSoft
+    static let pcText3   = inkFaint
+    static let pcWarning = amber
+    static let pcError   = red
 }
 
-// Register Syne (bundled OFL font) once at app startup so SwiftUI
-// `Font.custom("Syne-ExtraBold", ...)` resolves on iOS. SwiftPM resources
-// don't auto-populate UIAppFonts, so we register at runtime.
+// MARK: - Font registration
+
+/// Registers bundled fonts (Fraunces, Inter Tight, JetBrains Mono)
+/// at runtime. SwiftPM resources don't auto-populate UIAppFonts.
 enum PingClawFonts {
     static let register: Void = {
-        guard let url = Bundle.module.url(
-            forResource: "Syne-VF",
-            withExtension: "ttf",
-            subdirectory: "Fonts"
-        ) else {
-            return
+        let fonts = ["Fraunces-VF", "InterTight-VF", "JetBrainsMono-VF"]
+        for name in fonts {
+            guard let url = Bundle.module.url(
+                forResource: name, withExtension: "ttf", subdirectory: "Fonts"
+            ) else { continue }
+            var error: Unmanaged<CFError>?
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
         }
-        var error: Unmanaged<CFError>?
-        CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
     }()
 }
 
-// Two-tone wordmark — "Ping" in primary text, "Claw" in accent teal,
-// always on a single line. Uses Syne ExtraBold (bundled). The dot on
-// the "i" in "Ping" pulses with the accent glow from the app icon.
-// When `animated` is true (default) the dot cycles through a soft
-// breathing glow.
-struct PingClawWordmark: View {
-    var size: CGFloat = 28
-    var animated: Bool = true
+// MARK: - Typography
 
-    var body: some View {
-        HStack(spacing: 0) {
-            pingText
-            Text("Claw").foregroundStyle(Color.pcAccent)
-        }
-        .font(.custom("Syne-ExtraBold", size: size))
+/// Reusable text style builders. All sizes are in points.
+enum Typography {
+    // Display — Fraunces serif
+    static func display(_ size: CGFloat = 34, weight: Font.Weight = .medium) -> Font {
+        .custom("Fraunces", size: size).weight(weight)
     }
 
-    /// "Ping" with the "i" dot replaced by an animated glow square.
-    /// The dotless-i trick: render "P" + "ı" (U+0131, Turkish dotless i)
-    /// + "ng" so the font draws no dot, then overlay our own.
-    private var pingText: some View {
-        HStack(spacing: 0) {
-            Text("P\u{0131}")
-                .foregroundStyle(Color.pcText)
-                .overlay(alignment: .topTrailing) {
-                    PingDot(size: size, animated: animated)
-                }
-            Text("ng")
-                .foregroundStyle(Color.pcText)
+    // Title — Fraunces serif
+    static func title(_ size: CGFloat = 22, weight: Font.Weight = .medium) -> Font {
+        .custom("Fraunces", size: size).weight(weight)
+    }
+
+    // Row title — Fraunces serif, slightly smaller
+    static func rowTitle(_ size: CGFloat = 16, weight: Font.Weight = .medium) -> Font {
+        .custom("Fraunces", size: size).weight(weight)
+    }
+
+    // Body — Inter Tight sans-serif
+    static func body(_ size: CGFloat = 15, weight: Font.Weight = .regular) -> Font {
+        .custom("InterTight", size: size).weight(weight)
+    }
+
+    // Caption — Inter Tight
+    static func caption(_ size: CGFloat = 13) -> Font {
+        .custom("InterTight", size: size)
+    }
+
+    // Monospace — JetBrains Mono
+    static func mono(_ size: CGFloat = 14, weight: Font.Weight = .medium) -> Font {
+        .custom("JetBrainsMono", size: size).weight(weight)
+    }
+
+    // Small mono — labels, tags, eyebrows
+    static func monoSmall(_ size: CGFloat = 10) -> Font {
+        .custom("JetBrainsMono", size: size).weight(.medium)
+    }
+}
+
+// MARK: - Spacing
+
+enum Spacing {
+    static let screenH: CGFloat = 18
+    static let cardPadH: CGFloat = 20
+    static let cardPadV: CGFloat = 20
+    static let cardRadius: CGFloat = 16
+    static let buttonRadius: CGFloat = 13
+    static let inputRadius: CGFloat = 12
+    static let rowPadH: CGFloat = 18
+    static let rowPadV: CGFloat = 14
+}
+
+// MARK: - Wordmark
+
+struct WordmarkView: View {
+    enum Size { case large, medium, small }
+    var size: Size = .large
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var textSize: CGFloat {
+        switch size {
+        case .large: 44
+        case .medium: 28
+        case .small: 20
+        }
+    }
+
+    private var pinSize: CGFloat {
+        switch size {
+        case .large: 18
+        case .medium: 12
+        case .small: 9
+        }
+    }
+
+    private var haloSize: CGFloat {
+        switch size {
+        case .large: 32
+        case .medium: 22
+        case .small: 16
+        }
+    }
+
+    private var gap: CGFloat {
+        switch size {
+        case .large: 16
+        case .medium: 11
+        case .small: 9
+        }
+    }
+
+    private var haloOpacity: Double {
+        colorScheme == .dark ? 0.28 : 0.18
+    }
+
+    var body: some View {
+        HStack(spacing: gap) {
+            ZStack {
+                Circle()
+                    .fill(Color.rust.opacity(haloOpacity))
+                    .frame(width: haloSize, height: haloSize)
+                Circle()
+                    .fill(Color.rust)
+                    .frame(width: pinSize, height: pinSize)
+            }
+            Text("pingclaw")
+                .font(.custom("Fraunces", size: textSize))
+                .fontWeight(.medium)
+                .foregroundStyle(Color.ink)
+                .tracking(-0.025 * textSize)
         }
     }
 }
 
-/// The pulsing dot that replaces the "i" tittle in "Ping".
-private struct PingDot: View {
-    let size: CGFloat
-    let animated: Bool
-    @State private var phase: CGFloat = 0
+// MARK: - Section label
 
-    // Glow colours sampled from the app icon's crosshair.
-    private let glowBright = Color(red: 0/255, green: 240/255, blue: 200/255) // bright cyan
-    private let glowDim    = Color(red: 0/255, green: 160/255, blue: 130/255) // dimmer teal
-
-    private var dotSize: CGFloat { size * 0.16 }
-
-    // Vertical offset: place the dot where a Syne ExtraBold tittle sits.
-    private var yOffset: CGFloat { size * 0.08 }
-    // Pull left to center over the stem of ı.
-    private var xOffset: CGFloat { size * 0.19 }
+/// Rust monospace caps label with a trailing horizontal rule.
+struct SectionLabel: View {
+    let title: String
 
     var body: some View {
-        Rectangle()
-            .fill(currentColor)
-            .frame(width: dotSize, height: dotSize)
-            .shadow(color: currentColor.opacity(glowOpacity), radius: dotSize * 0.8)
-            .offset(x: -xOffset, y: yOffset)
-            .onAppear {
-                guard animated else { return }
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                    phase = 1
-                }
-            }
+        HStack(spacing: 10) {
+            Text(title.uppercased())
+                .font(Typography.monoSmall())
+                .tracking(2)
+                .foregroundStyle(Color.rust)
+            Rectangle()
+                .fill(Color.rule)
+                .frame(height: 1)
+        }
+        .padding(.top, 22)
+        .padding(.bottom, 10)
+        .padding(.leading, 4)
     }
+}
 
-    private var currentColor: Color {
-        animated ? interpolated : glowBright
-    }
+// MARK: - Settings group (card container)
 
-    private var glowOpacity: Double {
-        animated ? 0.5 + 0.4 * Double(phase) : 0.7
-    }
+struct SettingsGroup<Content: View>: View {
+    @ViewBuilder var content: () -> Content
 
-    private var interpolated: Color {
-        let t = Double(phase)
-        return Color(
-            red:   lerp(0/255, 0/255, t),
-            green: lerp(160/255, 240/255, t),
-            blue:  lerp(130/255, 200/255, t)
+    var body: some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(Color.paperWarm)
+        .clipShape(RoundedRectangle(cornerRadius: Spacing.cardRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Spacing.cardRadius)
+                .stroke(Color.rule, lineWidth: 1)
         )
     }
+}
 
-    private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double {
-        a + (b - a) * t
+// MARK: - Settings row
+
+struct SettingsRow: View {
+    let title: String
+    var subtitle: String = ""
+    var style: RowStyle = .default
+    var trailing: TrailingType = .none
+    var action: () -> Void = {}
+
+    enum RowStyle { case `default`, caution, destructive }
+    enum TrailingType { case none, chevron, external, check }
+
+    private var titleColor: Color {
+        switch style {
+        case .default: .ink
+        case .caution: .amber
+        case .destructive: .red
+        }
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 14) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(Typography.rowTitle())
+                        .foregroundStyle(titleColor)
+                    if !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(Typography.caption(12))
+                            .foregroundStyle(Color.inkSoft)
+                            .lineSpacing(2)
+                    }
+                }
+                Spacer()
+                trailingView
+            }
+            .padding(.horizontal, Spacing.rowPadH)
+            .padding(.vertical, Spacing.rowPadV)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var trailingView: some View {
+        switch trailing {
+        case .none:
+            EmptyView()
+        case .chevron:
+            Text("\u{203A}")
+                .font(.custom("Fraunces", size: 18))
+                .foregroundStyle(Color.inkGhost)
+                .padding(.top, 2)
+        case .external:
+            Text("\u{2197}")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.inkGhost)
+                .padding(.top, 2)
+        case .check:
+            Image(systemName: "checkmark")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.rust)
+                .padding(.top, 4)
+        }
+    }
+}
+
+// MARK: - Row divider
+
+struct RowDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.rule)
+            .frame(height: 1)
+    }
+}
+
+// MARK: - On pill
+
+struct PillView: View {
+    @State private var pulse = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.rust)
+                .frame(width: 6, height: 6)
+                .opacity(pulse ? 0.5 : 1.0)
+                .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: pulse)
+            Text("ON")
+                .font(Typography.monoSmall())
+                .tracking(1)
+                .foregroundStyle(Color.rust)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.paper)
+        .overlay(
+            Capsule().stroke(Color.rust, lineWidth: 1)
+        )
+        .clipShape(Capsule())
+        .onAppear { pulse = true }
+    }
+}
+
+// MARK: - Meta box
+
+struct MetaBox: View {
+    let label: String
+    let value: String
+    var small: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
+                .font(Typography.monoSmall(9))
+                .tracking(1.5)
+                .foregroundStyle(Color.inkFaint)
+            Text(value)
+                .font(Typography.mono(small ? 15 : 18))
+                .foregroundStyle(Color.ink)
+                .tracking(-0.2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.paperWarm)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.rule, lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Primary button
+
+struct PrimaryButton: View {
+    let title: String
+    var action: () -> Void = {}
+    var disabled: Bool = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(Typography.body(15, weight: .medium))
+                .tracking(0.15)
+                .foregroundStyle(Color.paper)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(disabled ? Color.inkGhost : Color.ink)
+                .clipShape(RoundedRectangle(cornerRadius: Spacing.buttonRadius))
+        }
+        .disabled(disabled)
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Secondary button
+
+struct SecondaryButton: View {
+    let title: String
+    var action: () -> Void = {}
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(Typography.body(15, weight: .medium))
+                .foregroundStyle(Color.ink)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: Spacing.buttonRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Spacing.buttonRadius)
+                        .stroke(Color.rule, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Ghost button
+
+struct GhostButton: View {
+    let title: String
+    var action: () -> Void = {}
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(Typography.body(14, weight: .medium))
+                .foregroundStyle(Color.inkSoft)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Tag
+
+struct TagView: View {
+    let text: String
+    var style: TagStyle = .moss
+
+    enum TagStyle { case moss, amber }
+
+    private var color: Color {
+        switch style {
+        case .moss: .moss
+        case .amber: .amber
+        }
+    }
+
+    var body: some View {
+        Text(text.uppercased())
+            .font(Typography.monoSmall(9))
+            .tracking(1.5)
+            .foregroundStyle(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(color.opacity(0.2), lineWidth: 1)
+            )
+    }
+}
+
+// MARK: - Field input
+
+struct FieldInput: View {
+    let label: String
+    @Binding var text: String
+    var placeholder: String = ""
+    var hint: String = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(label.uppercased())
+                .font(Typography.monoSmall())
+                .tracking(1.5)
+                .foregroundStyle(Color.inkFaint)
+
+            TextField(placeholder, text: $text)
+                .font(Typography.mono(13))
+                .foregroundStyle(Color.ink)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 13)
+                .background(Color.paperWarm)
+                .clipShape(RoundedRectangle(cornerRadius: Spacing.inputRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Spacing.inputRadius)
+                        .stroke(Color.rule, lineWidth: 1)
+                )
+
+            if !hint.isEmpty {
+                Text(hint)
+                    .font(Typography.caption(11))
+                    .foregroundStyle(Color.inkFaint)
+                    .lineSpacing(2)
+            }
+        }
+    }
+}
+
+// MARK: - Back link
+
+struct BackLink: View {
+    let title: String
+    var action: () -> Void = {}
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 2) {
+                Text("\u{2039}")
+                Text(title)
+            }
+            .font(Typography.body(15, weight: .medium))
+            .foregroundStyle(Color.rust)
+        }
+        .buttonStyle(.plain)
     }
 }
