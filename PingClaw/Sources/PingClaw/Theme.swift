@@ -78,37 +78,37 @@ enum PingClawFonts {
 /// Reusable text style builders. All sizes are in points.
 enum Typography {
     // Display — Fraunces serif
-    static func display(_ size: CGFloat = 34, weight: Font.Weight = .medium) -> Font {
+    static func display(_ size: CGFloat = 36, weight: Font.Weight = .medium) -> Font {
         .custom("Fraunces", size: size).weight(weight)
     }
 
     // Title — Fraunces serif
-    static func title(_ size: CGFloat = 22, weight: Font.Weight = .medium) -> Font {
+    static func title(_ size: CGFloat = 24, weight: Font.Weight = .medium) -> Font {
         .custom("Fraunces", size: size).weight(weight)
     }
 
     // Row title — Fraunces serif, slightly smaller
-    static func rowTitle(_ size: CGFloat = 16, weight: Font.Weight = .medium) -> Font {
+    static func rowTitle(_ size: CGFloat = 17, weight: Font.Weight = .medium) -> Font {
         .custom("Fraunces", size: size).weight(weight)
     }
 
     // Body — Inter Tight sans-serif
-    static func body(_ size: CGFloat = 15, weight: Font.Weight = .regular) -> Font {
+    static func body(_ size: CGFloat = 16, weight: Font.Weight = .regular) -> Font {
         .custom("InterTight", size: size).weight(weight)
     }
 
     // Caption — Inter Tight
-    static func caption(_ size: CGFloat = 13) -> Font {
+    static func caption(_ size: CGFloat = 14) -> Font {
         .custom("InterTight", size: size)
     }
 
     // Monospace — JetBrains Mono
-    static func mono(_ size: CGFloat = 14, weight: Font.Weight = .medium) -> Font {
+    static func mono(_ size: CGFloat = 15, weight: Font.Weight = .medium) -> Font {
         .custom("JetBrainsMono", size: size).weight(weight)
     }
 
     // Small mono — labels, tags, eyebrows
-    static func monoSmall(_ size: CGFloat = 10) -> Font {
+    static func monoSmall(_ size: CGFloat = 11) -> Font {
         .custom("JetBrainsMono", size: size).weight(.medium)
     }
 }
