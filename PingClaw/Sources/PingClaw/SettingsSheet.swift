@@ -266,40 +266,87 @@ struct ServerURLView: View {
         ZStack {
             Color.paper.ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 0) {
-                BackLink(title: "Settings") { dismiss() }
-                    .padding(.horizontal, Spacing.screenH)
-                    .padding(.top, 6)
-                    .padding(.bottom, 22)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    BackLink(title: "Settings") { dismiss() }
+                        .padding(.horizontal, Spacing.screenH)
+                        .padding(.top, 6)
+                        .padding(.bottom, 22)
 
-                Text("Server URL")
-                    .font(Typography.display(28))
-                    .foregroundStyle(Color.ink)
-                    .padding(.horizontal, Spacing.screenH)
-                    .padding(.bottom, 10)
+                    Text("Server")
+                        .font(Typography.display(28))
+                        .foregroundStyle(Color.ink)
+                        .padding(.horizontal, Spacing.screenH)
+                        .padding(.bottom, 10)
 
-                Text("Set the server URL if you are running your own pingclaw server. Leave as the default for the hosted service.")
-                    .font(Typography.caption())
-                    .foregroundStyle(Color.inkSoft)
-                    .padding(.horizontal, Spacing.screenH)
-                    .padding(.bottom, 28)
+                    Text("Configure the server this app connects to. Use the default for the hosted service, or point to your own.")
+                        .font(Typography.caption())
+                        .foregroundStyle(Color.inkSoft)
+                        .lineSpacing(3)
+                        .padding(.horizontal, Spacing.screenH)
+                        .padding(.bottom, 28)
 
-                FieldInput(
-                    label: "Server URL",
-                    text: $serverUrl,
-                    placeholder: "https://pingclaw.me",
-                    hint: "Default: https://pingclaw.me"
-                )
-                .padding(.horizontal, Spacing.screenH)
-                .onChange(of: serverUrl) { _, newValue in
-                    storage.serverUrl = newValue
+                    // Server URL
+                    SectionLabel(title: "Server URL")
+                        .padding(.horizontal, Spacing.screenH)
+
+                    FieldInput(
+                        label: "URL",
+                        text: $serverUrl,
+                        placeholder: "https://pingclaw.me",
+                        hint: "Default: https://pingclaw.me"
+                    )
+                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.bottom, 24)
+                    .onChange(of: serverUrl) { _, newValue in
+                        storage.serverUrl = newValue
+                    }
+
+                    // Pairing token
+                    SectionLabel(title: "Pairing token")
+                        .padding(.horizontal, Spacing.screenH)
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("TOKEN")
+                            .font(Typography.monoSmall())
+                            .tracking(1.5)
+                            .foregroundStyle(Color.inkFaint)
+
+                        Text(maskedToken)
+                            .font(Typography.mono(14))
+                            .foregroundStyle(Color.ink)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 13)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.paperWarm)
+                            .clipShape(RoundedRectangle(cornerRadius: Spacing.inputRadius))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Spacing.inputRadius)
+                                    .stroke(Color.rule, lineWidth: 1)
+                            )
+
+                        Text("Issued at sign-in. Rotate from the web dashboard if compromised.")
+                            .font(Typography.caption(11))
+                            .foregroundStyle(Color.inkFaint)
+                            .lineSpacing(2)
+                    }
+                    .padding(.horizontal, Spacing.screenH)
+
+                    Spacer(minLength: 40)
                 }
-
-                Spacer()
             }
         }
         .onAppear {
             serverUrl = storage.serverUrl
         }
+    }
+
+    private var maskedToken: String {
+        guard let token = storage.getPairingToken(), !token.isEmpty else {
+            return "—"
+        }
+        let prefix = String(token.prefix(6))
+        let suffix = String(token.suffix(4))
+        return "\(prefix)…\(suffix)"
     }
 }
