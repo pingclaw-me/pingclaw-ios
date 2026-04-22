@@ -27,6 +27,10 @@ struct PrivacySettingsView: View {
                         .padding(.horizontal, Spacing.screenH)
                         .padding(.bottom, 20)
 
+                    // Local permissions section
+                    permissionsSection
+                        .padding(.horizontal, Spacing.screenH)
+
                     if loading {
                         ProgressView()
                             .tint(Color.rust)
@@ -35,12 +39,8 @@ struct PrivacySettingsView: View {
                     } else if let markdown {
                         MarkdownBodyView(markdown: markdown)
                             .padding(.horizontal, Spacing.screenH)
+                            .padding(.top, 24)
                     }
-
-                    // Local permissions section
-                    permissionsSection
-                        .padding(.horizontal, Spacing.screenH)
-                        .padding(.top, 24)
 
                     Spacer(minLength: 40)
                 }
