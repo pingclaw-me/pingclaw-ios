@@ -343,7 +343,6 @@ struct PillView: View {
 struct MetaBox: View {
     let label: String
     let value: String
-    var small: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -352,11 +351,11 @@ struct MetaBox: View {
                 .tracking(1.5)
                 .foregroundStyle(Color.inkFaint)
             Text(value)
-                .font(Typography.mono(small ? 15 : 18))
+                .font(Typography.mono(18))
                 .foregroundStyle(Color.ink)
                 .tracking(-0.2)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(Color.paperWarm)
