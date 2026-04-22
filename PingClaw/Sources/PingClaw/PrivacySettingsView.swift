@@ -139,8 +139,10 @@ struct PrivacySettingsView: View {
     }
 }
 
-/// Reusable markdown body renderer. Extracted so MarkdownContentView
-/// and PrivacySettingsView can both use it.
+// MARK: - Shared markdown renderer
+
+/// Renders markdown with support for ## headings, ### subheadings,
+/// - bullets, **bold**, [links](url), and paragraphs.
 struct MarkdownBodyView: View {
     let markdown: String
 
@@ -197,7 +199,7 @@ struct MarkdownBodyView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 6)
         case .paragraph(let text):
-            Text(text)
+            renderInlineText(text)
                 .font(Typography.caption())
                 .foregroundStyle(Color.inkSoft)
                 .lineSpacing(4)
@@ -207,12 +209,89 @@ struct MarkdownBodyView: View {
                 Text("\u{2022}")
                     .font(Typography.caption())
                     .foregroundStyle(Color.inkFaint)
-                Text(text)
+                renderInlineText(text)
                     .font(Typography.caption())
                     .foregroundStyle(Color.inkSoft)
                     .lineSpacing(3)
             }
             .padding(.bottom, 4)
         }
+    }
+
+    /// Parses inline markdown: **bold** and [text](url) links.
+    private func renderInlineText(_ text: String) -> Text {
+        var result = Text("")
+        var remaining = text[...]
+
+        while !remaining.isEmpty {
+            // Look for the next special pattern
+            if let boldRange = remaining.range(of: "**") {
+                // Text before the bold
+                let before = remaining[remaining.startIndex..<boldRange.lowerBound]
+                result = result + parseLinks(String(before))
+
+                // Find closing **
+                let afterBold = remaining[boldRange.upperBound...]
+                if let closeRange = afterBold.range(of: "**") {
+                    let boldText = String(afterBold[afterBold.startIndex..<closeRange.lowerBound])
+                    result = result + parseLinks(boldText).bold()
+                    remaining = afterBold[closeRange.upperBound...]
+                } else {
+                    // No closing ** — treat as literal
+                    result = result + parseLinks(String(remaining))
+                    remaining = remaining[remaining.endIndex...]
+                }
+            } else {
+                // No more bold — parse links in the rest
+                result = result + parseLinks(String(remaining))
+                remaining = remaining[remaining.endIndex...]
+            }
+        }
+        return result
+    }
+
+    /// Parses [text](url) links into tappable Text views.
+    private func parseLinks(_ text: String) -> Text {
+        var result = Text("")
+        var remaining = text[...]
+
+        while !remaining.isEmpty {
+            // Find [
+            guard let openBracket = remaining.firstIndex(of: "[") else {
+                result = result + Text(String(remaining))
+                break
+            }
+
+            // Text before the link
+            let before = remaining[remaining.startIndex..<openBracket]
+            if !before.isEmpty {
+                result = result + Text(String(before))
+            }
+
+            // Find ](url)
+            let afterOpen = remaining[remaining.index(after: openBracket)...]
+            guard let closeBracket = afterOpen.firstIndex(of: "]"),
+                  let openParen = afterOpen.index(closeBracket, offsetBy: 1, limitedBy: afterOpen.endIndex),
+                  afterOpen[openParen] == "(",
+                  let closeParen = afterOpen[afterOpen.index(after: openParen)...].firstIndex(of: ")") else {
+                // Not a valid link — output the [ and continue
+                result = result + Text("[")
+                remaining = remaining[remaining.index(after: openBracket)...]
+                continue
+            }
+
+            let linkText = String(afterOpen[afterOpen.startIndex..<closeBracket])
+            let linkURL = String(afterOpen[afterOpen.index(after: openParen)..<closeParen])
+
+            // Render as tappable link if it's a valid URL
+            if let url = URL(string: linkURL) {
+                result = result + Text(.init("[\(linkText)](\(url.absoluteString))"))
+            } else {
+                result = result + Text(linkText)
+            }
+
+            remaining = afterOpen[afterOpen.index(after: closeParen)...]
+        }
+        return result
     }
 }

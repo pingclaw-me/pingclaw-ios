@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Fetches raw markdown from the server and renders it natively.
+/// Fetches raw markdown from the server and renders it as a full-screen
+/// push with a back link. Used for terms of service.
 struct MarkdownContentView: View {
     let title: String
     let endpoint: String
@@ -39,7 +40,6 @@ struct MarkdownContentView: View {
                             .foregroundStyle(Color.red)
                             .padding(.horizontal, Spacing.screenH)
                     } else if let markdown {
-                        // Render markdown lines as styled text
                         MarkdownBodyView(markdown: markdown)
                             .padding(.horizontal, Spacing.screenH)
                     }
@@ -48,6 +48,7 @@ struct MarkdownContentView: View {
                 }
             }
         }
+        .tint(Color.rust)
         .task {
             await fetchContent()
         }
