@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var hasWebhook = false
     @State private var hasOpenClaw = false
     @State private var chatGPTURL: String?
+    @State private var integrationActivity: [String: String] = [:] // kind → RFC3339 timestamp
 
     var body: some View {
         NavigationStack {
@@ -245,42 +246,40 @@ struct ContentView: View {
                 integrationCard(
                     name: "ChatGPT",
                     mode: "GPT \u{00B7} Pull",
-                    status: "Configured",
-                    isLive: true
+                    lastActivity: integrationActivity["api"]
                 )
             }
             if hasApiKey {
                 integrationCard(
                     name: "MCP agents",
                     mode: "MCP \u{00B7} Pull",
-                    status: "API key active",
-                    isLive: true
+                    lastActivity: integrationActivity["mcp"]
                 )
             }
             if hasWebhook {
                 integrationCard(
                     name: "Webhook",
                     mode: "Push",
-                    status: "Configured",
-                    isLive: false
+                    lastActivity: integrationActivity["webhook"]
                 )
             }
             if hasOpenClaw {
                 integrationCard(
                     name: "OpenClaw gateway",
                     mode: "Push \u{00B7} Native",
-                    status: "Configured",
-                    isLive: false
+                    lastActivity: integrationActivity["openclaw"]
                 )
             }
         }
     }
 
-    private func integrationCard(name: String, mode: String, status: String, isLive: Bool) -> some View {
-        HStack(spacing: 12) {
+    private func integrationCard(name: String, mode: String, lastActivity: String?) -> some View {
+        let activityInfo = formatActivity(lastActivity)
+
+        return HStack(spacing: 12) {
             // Status dot
             Circle()
-                .fill(isLive ? Color.moss : Color.inkGhost)
+                .fill(activityInfo.isRecent ? Color.moss : Color.inkGhost)
                 .frame(width: 8, height: 8)
 
             // Body
@@ -295,9 +294,9 @@ struct ContentView: View {
                         .tracking(1)
                         .foregroundStyle(Color.inkFaint)
                 }
-                Text(status)
+                Text(activityInfo.label)
                     .font(Typography.mono(10))
-                    .foregroundStyle(isLive ? Color.moss : Color.inkFaint)
+                    .foregroundStyle(activityInfo.isRecent ? Color.moss : Color.inkFaint)
             }
 
             Text("\u{203A}")
@@ -312,6 +311,25 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.rule, lineWidth: 1)
         )
+    }
+
+    private func formatActivity(_ timestamp: String?) -> (label: String, isRecent: Bool) {
+        let _ = tick // force refresh
+        guard let timestamp,
+              let date = ISO8601DateFormatter().date(from: timestamp) else {
+            return ("Never accessed", false)
+        }
+        let seconds = Int(Date().timeIntervalSince(date))
+        let ago: String
+        if seconds < 10 { ago = "just now" }
+        else if seconds < 60 { ago = "\(seconds)s ago" }
+        else if seconds < 3600 { ago = "\(seconds / 60)m ago" }
+        else if seconds < 86400 { ago = "\(seconds / 3600)h ago" }
+        else { ago = "\(seconds / 86400)d ago" }
+
+        let isRecent = seconds < 3600 // within the last hour
+        let label = isRecent ? "Live \u{00B7} \(ago)" : "Last \u{00B7} \(ago)"
+        return (label, isRecent)
     }
 
     // MARK: - Actions
@@ -404,6 +422,17 @@ struct ContentView: View {
                let gptURL = chatgpt["url"] as? String,
                !gptURL.isEmpty {
                 chatGPTURL = gptURL
+            }
+        }
+
+        // Fetch /pingclaw/integrations/status for last activity times
+        if let url = URL(string: "\(baseURL)/pingclaw/integrations/status") {
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            if let (data, _) = try? await URLSession.shared.data(for: request),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let activity = json["activity"] as? [String: String] {
+                integrationActivity = activity
             }
         }
     }
