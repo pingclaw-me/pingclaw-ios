@@ -77,7 +77,18 @@ struct ContentView: View {
                     .padding(.horizontal, Spacing.screenH)
                     .padding(.top, 14)
 
-                    // Helper line
+                }
+
+                Spacer(minLength: 40)
+
+                // Share button + helper line pinned to bottom
+                if locationManager.isTracking {
+                    SecondaryButton(title: shareCooldown ? "Sent" : "Share location now") {
+                        handleShareNow()
+                    }
+                    .disabled(shareCooldown)
+                    .padding(.horizontal, Spacing.screenH)
+
                     HStack(spacing: 0) {
                         Text("\u{25CF} ")
                             .font(Typography.caption(11))
@@ -86,18 +97,7 @@ struct ContentView: View {
                             .font(Typography.caption(11))
                             .foregroundStyle(Color.inkFaint)
                     }
-                    .padding(.top, 14)
-                }
-
-                Spacer(minLength: 40)
-
-                // Share button pinned to bottom
-                if locationManager.isTracking {
-                    SecondaryButton(title: shareCooldown ? "Sent" : "Share location now") {
-                        handleShareNow()
-                    }
-                    .disabled(shareCooldown)
-                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.top, 10)
                     .padding(.bottom, 24)
                 }
             }
