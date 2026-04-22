@@ -134,7 +134,9 @@ struct PrivacySettingsView: View {
         }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            markdown = String(data: data, encoding: .utf8) ?? ""
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: String] {
+                markdown = json["content"]
+            }
         } catch {}
         loading = false
     }
