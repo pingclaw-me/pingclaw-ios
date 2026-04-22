@@ -159,12 +159,8 @@ struct SettingsSheet: View {
                 .navigationBarHidden(true)
         }
         .navigationDestination(isPresented: $showPrivacy) {
-            MarkdownContentView(
-                title: "Privacy policy",
-                endpoint: "privacy",
-                serverUrl: storage.serverUrl
-            )
-            .navigationBarHidden(true)
+            PrivacySettingsView(serverUrl: storage.serverUrl)
+                .navigationBarHidden(true)
         }
         .navigationDestination(isPresented: $showTerms) {
             MarkdownContentView(
