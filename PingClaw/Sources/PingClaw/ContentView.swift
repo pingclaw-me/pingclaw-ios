@@ -71,8 +71,11 @@ struct ContentView: View {
                 if locationManager.isTracking {
                     HStack(spacing: 10) {
                         MetaBox(label: "Last update", value: formatTimeAgo(locationManager.lastUpdateTime), small: true)
+                            .frame(maxHeight: .infinity)
                         MetaBox(label: "Accuracy", value: formatAccuracy(locationManager.lastAccuracyMetres))
+                            .frame(maxHeight: .infinity)
                     }
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, Spacing.screenH)
                     .padding(.top, 14)
 
