@@ -46,6 +46,7 @@ struct PrivacySettingsView: View {
                 }
             }
         }
+        .tint(Color.rust)
         .task { await fetchContent() }
     }
 
@@ -54,7 +55,7 @@ struct PrivacySettingsView: View {
     private var permissionsSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("System permissions")
-                .font(Typography.title(17))
+                .font(Typography.title(20))
                 .foregroundStyle(Color.ink)
                 .padding(.bottom, 10)
 
