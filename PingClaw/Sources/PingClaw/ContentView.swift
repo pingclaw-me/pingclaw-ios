@@ -99,14 +99,8 @@ struct ContentView: View {
 
                 Spacer(minLength: 40)
 
-                // Share button + helper line pinned to bottom
+                // Helper line pinned to bottom
                 if locationManager.isTracking {
-                    SecondaryButton(title: shareCooldown ? "Sent" : "Share location now") {
-                        handleShareNow()
-                    }
-                    .disabled(shareCooldown)
-                    .padding(.horizontal, Spacing.screenH)
-
                     HStack(spacing: 0) {
                         Text("\u{25CF} ")
                             .font(Typography.caption(11))
@@ -115,7 +109,6 @@ struct ContentView: View {
                             .font(Typography.caption(11))
                             .foregroundStyle(Color.inkFaint)
                     }
-                    .padding(.top, 10)
                     .padding(.bottom, 24)
                 }
             }
@@ -125,38 +118,40 @@ struct ContentView: View {
     // MARK: - Last Update box with refresh icon
 
     private var lastUpdateBox: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("LAST UPDATE")
-                    .font(Typography.monoSmall(9))
-                    .tracking(1.5)
-                    .foregroundStyle(Color.inkFaint)
-                Spacer()
-                Button {
-                    handleShareNow()
-                } label: {
+        Button {
+            handleShareNow()
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("LAST UPDATE")
+                        .font(Typography.monoSmall(9))
+                        .tracking(1.5)
+                        .foregroundStyle(Color.inkFaint)
+                    Spacer()
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.inkFaint)
+                        .foregroundStyle(shareCooldown ? Color.moss : Color.inkFaint)
                         .frame(width: 20, height: 20)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Refresh location")
+                Text(shareCooldown ? "Sent" : formatTimeAgo(locationManager.lastUpdateTime))
+                    .font(Typography.mono(18))
+                    .foregroundStyle(shareCooldown ? Color.moss : Color.ink)
+                    .tracking(-0.2)
             }
-            Text(formatTimeAgo(locationManager.lastUpdateTime))
-                .font(Typography.mono(18))
-                .foregroundStyle(Color.ink)
-                .tracking(-0.2)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color.paperWarm)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.rule, lineWidth: 1)
+            )
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(Color.paperWarm)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.rule, lineWidth: 1)
-        )
+        .buttonStyle(.plain)
+        .disabled(shareCooldown)
+        .accessibilityLabel("Share location now")
+        .accessibilityHint(shareCooldown ? "Waiting before you can send again" : "Taps to send your current location immediately")
     }
 
     // MARK: - Tagline
