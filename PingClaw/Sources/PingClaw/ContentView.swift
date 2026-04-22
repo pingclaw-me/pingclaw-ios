@@ -79,13 +79,6 @@ struct ContentView: View {
                     .padding(.horizontal, Spacing.screenH)
                     .padding(.top, 14)
 
-                    PrimaryButton(title: shareCooldown ? "Sent" : "Share location now") {
-                        handleShareNow()
-                    }
-                    .disabled(shareCooldown)
-                    .padding(.horizontal, Spacing.screenH)
-                    .padding(.top, 14)
-
                     // Helper line
                     HStack(spacing: 0) {
                         Text("\u{25CF} ")
@@ -99,6 +92,16 @@ struct ContentView: View {
                 }
 
                 Spacer(minLength: 40)
+
+                // Share button pinned to bottom
+                if locationManager.isTracking {
+                    SecondaryButton(title: shareCooldown ? "Sent" : "Share location now") {
+                        handleShareNow()
+                    }
+                    .disabled(shareCooldown)
+                    .padding(.horizontal, Spacing.screenH)
+                    .padding(.bottom, 24)
+                }
             }
         }
     }
