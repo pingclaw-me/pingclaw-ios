@@ -158,18 +158,22 @@ struct SettingsSheet: View {
             ServerURLView(storage: storage)
                 .navigationBarHidden(true)
         }
-        #if os(iOS)
-        .sheet(isPresented: $showPrivacy) {
-            if let url = URL(string: "\(storage.serverUrl)/privacypolicy?embedded=1") {
-                SafariView(url: url).ignoresSafeArea()
-            }
+        .navigationDestination(isPresented: $showPrivacy) {
+            MarkdownContentView(
+                title: "Privacy policy",
+                endpoint: "privacy",
+                serverUrl: storage.serverUrl
+            )
+            .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showTerms) {
-            if let url = URL(string: "\(storage.serverUrl)/termsofservice?embedded=1") {
-                SafariView(url: url).ignoresSafeArea()
-            }
+        .navigationDestination(isPresented: $showTerms) {
+            MarkdownContentView(
+                title: "Terms of service",
+                endpoint: "terms",
+                serverUrl: storage.serverUrl
+            )
+            .navigationBarHidden(true)
         }
-        #endif
         .alert("Sign Out?", isPresented: $showSignOutConfirm) {
             Button("Sign Out", role: .destructive) {
                 locationManager.stopTracking()
