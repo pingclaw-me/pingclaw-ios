@@ -53,8 +53,8 @@ final class LocationManager: NSObject {
     var connection: ConnectionStatus = .disconnected
     var lastUpdateTime: Date?
     var lastAccuracyMetres: Double = 0
-    var lastActivity: String = ""
     var updateMode: UpdateMode = .adaptive
+    var showLocationPermissionPrompt = false
 
     private let clManager = CLLocationManager()
     private let apiService: APIService
@@ -85,10 +85,10 @@ final class LocationManager: NSObject {
     func startTracking() {
         let status = clManager.authorizationStatus
         if status == .notDetermined {
-            // Persist intent so locationManagerDidChangeAuthorization can
-            // resume startup once the user grants permission.
-            storage.isTracking = true
-            clManager.requestAlwaysAuthorization()
+            // Show a pre-permission explanation before the system prompt.
+            // The view layer observes this flag and shows an alert. When
+            // the user confirms, it calls confirmLocationPermission().
+            showLocationPermissionPrompt = true
             return
         }
 
@@ -118,14 +118,18 @@ final class LocationManager: NSObject {
         clManager.requestLocation()
     }
 
+    /// Called by the UI after showing the pre-permission explanation.
+    /// Triggers the actual system authorization prompt.
+    func confirmLocationPermission() {
+        showLocationPermissionPrompt = false
+        storage.isTracking = true
+        clManager.requestAlwaysAuthorization()
+    }
+
     func requestImmediatePing() {
-        // iOS may suppress requestLocation() if it considers the cached
-        // location fresh enough — no didUpdateLocations callback fires,
-        // no POST goes out. So we POST the cached location ourselves
-        // immediately, AND ask Core Location for a fresh one for next time.
-        // Skip the cached post if it's too stale to represent "now".
-        if let cached = clManager.location,
-           Date().timeIntervalSince(cached.timestamp) < Self.cacheFreshnessWindow {
+        // POST whatever location we have right now — the user explicitly
+        // asked to share. Also request a fresh fix for next time.
+        if let cached = clManager.location {
             handleLocation(cached, force: true)
         }
         clManager.requestLocation()
@@ -164,8 +168,6 @@ final class LocationManager: NSObject {
 
     nonisolated private func handleLocation(_ location: CLLocation, force: Bool = false) {
         let accuracy = location.horizontalAccuracy
-        let speed = location.speed
-        let activity = inferActivity(speed: speed)
 
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -181,10 +183,9 @@ final class LocationManager: NSObject {
 
             self.lastUpdateTime = Date()
             self.lastAccuracyMetres = accuracy
-            self.lastActivity = activity
 
             do {
-                try await self.apiService.postLocation(location: location, activity: activity)
+                try await self.apiService.postLocation(location: location)
                 self.connection = .connected
             } catch {
                 // If the server returned 401, the pairing token is no
@@ -201,14 +202,6 @@ final class LocationManager: NSObject {
         }
     }
 
-    nonisolated private func inferActivity(speed: CLLocationSpeed) -> String {
-        // Negative speed is CLLocation's "unknown" sentinel; < 0.5 catches it
-        // along with actually-stationary readings.
-        if speed < 0.5 { return "Stationary" }
-        if speed < 3.0 { return "Walking" }
-        if speed < 8.0 { return "Cycling" }
-        return "In vehicle"
-    }
 }
 
 extension LocationManager: CLLocationManagerDelegate {

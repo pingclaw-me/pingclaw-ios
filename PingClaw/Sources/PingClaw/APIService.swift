@@ -4,7 +4,6 @@ import Foundation
 struct LocationPayload: Encodable, Sendable {
     let timestamp: String
     let location: LocationCoords
-    let activity: String
     // Only present on test pings from Settings > "Send test update" so the
     // server can skip storing them as real location history. Optional so
     // real pings serialize identically to the pre-existing wire format.
@@ -25,7 +24,7 @@ final class APIService {
         self.storage = storage
     }
 
-    func postLocation(location: CLLocation, activity: String) async throws {
+    func postLocation(location: CLLocation) async throws {
         let payload = LocationPayload(
             timestamp: ISO8601DateFormatter().string(from: location.timestamp),
             location: .init(
@@ -33,7 +32,6 @@ final class APIService {
                 lng: location.coordinate.longitude,
                 accuracy_metres: location.horizontalAccuracy
             ),
-            activity: activity,
             test: nil
         )
 
@@ -44,7 +42,6 @@ final class APIService {
         let payload = LocationPayload(
             timestamp: ISO8601DateFormatter().string(from: Date()),
             location: .init(lat: 0, lng: 0, accuracy_metres: 0),
-            activity: "Test",
             test: true
         )
 

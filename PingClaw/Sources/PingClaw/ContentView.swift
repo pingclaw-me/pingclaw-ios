@@ -41,6 +41,16 @@ struct ContentView: View {
             startTimer()
         }
         .onDisappear { stopTimer() }
+        .onReceive(NotificationCenter.default.publisher(for: .pingclawSessionInvalidated)) { _ in
+            isSignedIn = false
+            showSettings = false
+        }
+        .alert("Background Location", isPresented: $locationManager.showLocationPermissionPrompt) {
+            Button("Continue") { locationManager.confirmLocationPermission() }
+            Button("Not Now", role: .cancel) {}
+        } message: {
+            Text("PingClaw needs \"Always\" location access to keep sharing your position while the app is in the background. You can change this any time in Settings.")
+        }
         .task {
             if storage.getPairingToken() != nil {
                 await fetchIntegrationStatus()
@@ -214,11 +224,22 @@ struct ContentView: View {
 
     private var activeCount: Int {
         var count = 0
-        if chatGPTURL != nil { count += 1 }
-        if hasApiKey { count += 1 }
+        if hasApiKey || chatGPTURL != nil { count += 1 }
         if hasWebhook { count += 1 }
         if hasOpenClaw { count += 1 }
         return count
+    }
+
+    private func mostRecent(_ a: String?, _ b: String?) -> String? {
+        let fmt = ISO8601DateFormatter()
+        let dateA = a.flatMap { fmt.date(from: $0) }
+        let dateB = b.flatMap { fmt.date(from: $0) }
+        switch (dateA, dateB) {
+        case let (a?, b?): return a > b ? self.integrationActivity["api"] : self.integrationActivity["mcp"]
+        case (_?, nil): return self.integrationActivity["api"]
+        case (nil, _?): return self.integrationActivity["mcp"]
+        case (nil, nil): return nil
+        }
     }
 
     private var integrationsSection: some View {
@@ -242,18 +263,11 @@ struct ContentView: View {
             .padding(.horizontal, 2)
 
             // Cards
-            if chatGPTURL != nil {
+            if hasApiKey || chatGPTURL != nil {
                 integrationCard(
-                    name: "ChatGPT",
-                    mode: "GPT \u{00B7} Pull",
-                    lastActivity: integrationActivity["api"]
-                )
-            }
-            if hasApiKey {
-                integrationCard(
-                    name: "MCP agents",
-                    mode: "MCP \u{00B7} Pull",
-                    lastActivity: integrationActivity["mcp"]
+                    name: "ChatGPT / MCP agents",
+                    mode: "Pull",
+                    lastActivity: mostRecent(integrationActivity["api"], integrationActivity["mcp"])
                 )
             }
             if hasWebhook {
@@ -350,6 +364,7 @@ struct ContentView: View {
         guard !shareCooldown else { return }
         locationManager.requestImmediatePing()
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        Task { await fetchIntegrationStatus() }
         withAnimation(.easeInOut(duration: 0.2)) {
             shareCooldown = true
         }
@@ -382,13 +397,21 @@ struct ContentView: View {
         let baseURL = storage.serverUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard let token = storage.getPairingToken() else { return }
 
-        // Fetch /pingclaw/auth/me for has_api_key
+        // Fetch /pingclaw/auth/me for has_api_key — also detects
+        // account deletion or token invalidation from another device.
         if let url = URL(string: "\(baseURL)/pingclaw/auth/me") {
             var request = URLRequest(url: url)
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            if let (data, _) = try? await URLSession.shared.data(for: request),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                hasApiKey = json["has_api_key"] as? Bool ?? false
+            if let (data, response) = try? await URLSession.shared.data(for: request) {
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if status == 401 {
+                    locationManager.stopTracking()
+                    storage.clearAll()
+                    return
+                }
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    hasApiKey = json["has_api_key"] as? Bool ?? false
+                }
             }
         }
 
@@ -440,11 +463,13 @@ struct ContentView: View {
     // MARK: - Timer
 
     private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
             Task { @MainActor in
                 tick += 1
                 if isSignedIn && storage.getPairingToken() == nil {
                     isSignedIn = false
+                } else if isSignedIn {
+                    await fetchIntegrationStatus()
                 }
             }
         }

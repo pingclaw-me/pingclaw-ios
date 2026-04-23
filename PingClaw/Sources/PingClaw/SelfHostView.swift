@@ -31,7 +31,7 @@ struct SelfHostView: View {
 
                 (Text("Running ")
                     .foregroundColor(Color.inkSoft)
-                 + Text("server --local")
+                 + Text("pingclaw-server --local")
                     .foregroundColor(Color.ink)
                     .font(Typography.mono(12))
                  + Text("? Paste the URL and pairing token it printed on first run.")
@@ -95,11 +95,13 @@ struct SelfHostView: View {
 
                 // Actions
                 VStack(spacing: 4) {
-                    PrimaryButton(
-                        title: isConnecting ? "Connecting..." : "Pair this device",
-                        action: connect,
-                        disabled: isConnecting || serverUrl.isEmpty || pairingToken.isEmpty
-                    )
+                    if !verified {
+                        PrimaryButton(
+                            title: isConnecting ? "Connecting..." : "Pair this device",
+                            action: connect,
+                            disabled: isConnecting || serverUrl.isEmpty || pairingToken.isEmpty
+                        )
+                    }
                     GhostButton(title: "\u{2190} Back to sign-in options") {
                         dismiss()
                     }
@@ -148,13 +150,15 @@ struct SelfHostView: View {
                 }
 
                 verified = true
+                isConnecting = false
 
                 guard storage.savePairingToken(token) else {
                     errorMessage = "Could not save the token."
-                    isConnecting = false
                     return
                 }
-                isConnecting = false
+
+                // Brief pause so the user sees "Connection verified"
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
                 onSignedIn()
             } catch {
                 errorMessage = "Could not reach server: \(error.localizedDescription)"

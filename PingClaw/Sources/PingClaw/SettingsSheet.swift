@@ -11,11 +11,11 @@ struct SettingsSheet: View {
     @State private var selectedMode: UpdateMode = .adaptive
     @State private var showSignOutConfirm = false
     @State private var showDeleteConfirm = false
+    @State private var showDeleteError = false
     @State private var showPrivacy = false
     @State private var showTerms = false
     @State private var showPairingCode = false
     @State private var showServerUrl = false
-    @State private var chatGPTURL: String?
 
     var body: some View {
         ZStack {
@@ -62,18 +62,18 @@ struct SettingsSheet: View {
                         .padding(.horizontal, Spacing.screenH)
 
                     SettingsGroup {
-                        if let chatGPTURL, let url = URL(string: chatGPTURL) {
-                            SettingsRow(
-                                title: "Open PingClaw GPT",
-                                subtitle: "One-tap setup for ChatGPT. After installing, open the GPT from ChatGPT as usual.",
-                                trailing: .external
-                            ) {
-                                #if os(iOS)
+                        SettingsRow(
+                            title: "Open PingClaw GPT",
+                            subtitle: "One-tap setup for ChatGPT. After installing, open the GPT from ChatGPT as usual.",
+                            trailing: .external
+                        ) {
+                            #if os(iOS)
+                            if let url = URL(string: "https://chatgpt.com/g/g-69e2d7fe797c8191ab8c0356f375daca-pingclaw") {
                                 UIApplication.shared.open(url)
-                                #endif
                             }
-                            RowDivider()
+                            #endif
                         }
+                        RowDivider()
                         SettingsRow(
                             title: "Open dashboard on this phone",
                             subtitle: "Mint API keys and configure MCP clients, webhooks, or OpenClaw. Signs in automatically.",
@@ -186,11 +186,13 @@ struct SettingsSheet: View {
         } message: {
             Text("This will permanently delete your account and all data from the server. This cannot be undone.")
         }
+        .alert("Deletion Failed", isPresented: $showDeleteError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Could not delete your account from the server. Check your connection and try again.")
+        }
         .onAppear {
             selectedMode = storage.updateMode
-        }
-        .task {
-            await fetchConfig()
         }
     }
 
@@ -229,30 +231,15 @@ struct SettingsSheet: View {
         Task {
             do {
                 try await apiService.deleteAccount()
+                locationManager.stopTracking()
+                storage.clearAll()
+                dismiss()
             } catch {
-                #if DEBUG
-                print("[PingClaw] delete failed (clearing local state): \(error)")
-                #endif
+                showDeleteError = true
             }
-            locationManager.stopTracking()
-            storage.clearAll()
-            dismiss()
         }
     }
 
-    private func fetchConfig() async {
-        guard let url = URL(string: "\(storage.serverUrl)/pingclaw/config") else { return }
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let integrations = json["integrations"] as? [String: Any],
-               let chatgpt = integrations["chatgpt"] as? [String: Any],
-               let gptURL = chatgpt["url"] as? String,
-               !gptURL.isEmpty {
-                chatGPTURL = gptURL
-            }
-        } catch {}
-    }
 }
 
 // MARK: - Server URL settings screen

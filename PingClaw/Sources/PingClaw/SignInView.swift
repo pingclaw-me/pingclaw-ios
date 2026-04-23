@@ -10,6 +10,7 @@ struct SignInView: View {
     var storage: StorageService
     var onSignedIn: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isSigningIn = false
     @State private var errorMessage: String?
     @State private var showSelfHost = false
@@ -59,22 +60,42 @@ struct SignInView: View {
 
                     // Sign in buttons
                     VStack(spacing: 10) {
-                        // Apple
+                        // Apple — black in light mode, white in dark mode
                         SignInWithAppleButton(.signIn) { request in
                             request.requestedScopes = []
                         } onCompletion: { result in
                             handleAppleResult(result)
                         }
-                        .signInWithAppleButtonStyle(.black)
+                        .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
                         .frame(height: 50)
                         .cornerRadius(Spacing.buttonRadius)
                         .accessibilityLabel("Sign in with Apple")
 
-                        // Google
+                        // Google — inverse of Apple: white in light, black in dark
                         Button { startGoogleSignIn() } label: {
                             HStack(spacing: 8) {
                                 Text("G").font(.system(size: 16, weight: .bold))
                                 Text("Sign in with Google")
+                                    .font(Typography.body(15, weight: .medium))
+                            }
+                            .foregroundStyle(Color.ink)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.paper)
+                            .clipShape(RoundedRectangle(cornerRadius: Spacing.buttonRadius))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Spacing.buttonRadius)
+                                    .stroke(Color.ink, lineWidth: 1)
+                            )
+                        }
+                        .disabled(isSigningIn)
+                        .accessibilityLabel("Sign in with Google")
+
+                        // Self-host — outlined
+                        Button { showSelfHost = true } label: {
+                            HStack(spacing: 8) {
+                                Text(">_").font(.system(size: 14, weight: .bold, design: .monospaced))
+                                Text("Connect to your own server")
                                     .font(Typography.body(15, weight: .medium))
                             }
                             .foregroundStyle(Color.ink)
@@ -85,8 +106,7 @@ struct SignInView: View {
                                     .stroke(Color.ink, lineWidth: 1)
                             )
                         }
-                        .disabled(isSigningIn)
-                        .accessibilityLabel("Sign in with Google")
+                        .accessibilityLabel("Connect to your own server")
                     }
                     .padding(.horizontal, 24)
 
@@ -109,40 +129,6 @@ struct SignInView: View {
                             .padding(.top, 8)
                             .padding(.horizontal, 24)
                     }
-
-                    // Self-hosting divider
-                    HStack(spacing: 12) {
-                        Rectangle().fill(Color.rule).frame(height: 1)
-                        Text("OR SELF-HOSTING")
-                            .font(Typography.monoSmall())
-                            .tracking(1.3)
-                            .foregroundStyle(Color.inkFaint)
-                        Rectangle().fill(Color.rule).frame(height: 1)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 18)
-
-                    // Self-host row
-                    Button { showSelfHost = true } label: {
-                        HStack(alignment: .top, spacing: 14) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Connect to your own server")
-                                    .font(Typography.rowTitle())
-                                    .foregroundStyle(Color.ink)
-                                Text("No Apple or Google account needed")
-                                    .font(Typography.caption(12))
-                                    .foregroundStyle(Color.inkSoft)
-                            }
-                            Spacer()
-                            Text("\u{203A}")
-                                .font(.custom("Fraunces", size: 18))
-                                .foregroundStyle(Color.inkGhost)
-                                .padding(.top, 2)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 14)
-                    }
-                    .buttonStyle(.plain)
 
                     // Legal
                     Text("By continuing, you agree to the [Terms](https://pingclaw.me/termsofservice) and [Privacy Policy](https://pingclaw.me/privacypolicy).")

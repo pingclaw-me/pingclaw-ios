@@ -33,9 +33,9 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>PingClaw sends your location to your personal AI agent so it can answer location-aware questions. Your location is only shared with your own PingClaw account.</string>
+	<string>PingClaw sends your location to your AI agent so it can answer location-aware questions. With "Always" access, updates continue in the background while sharing is on. Your location is only shared with your own account and expires after 24 hours.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>PingClaw needs your location to share it with your personal AI agent.</string>
+	<string>PingClaw needs your location to share it with your AI agent so it can answer location-aware questions.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

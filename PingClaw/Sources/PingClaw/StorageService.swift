@@ -1,6 +1,10 @@
 import Foundation
 import Security
 
+extension Notification.Name {
+    static let pingclawSessionInvalidated = Notification.Name("pingclawSessionInvalidated")
+}
+
 @MainActor
 final class StorageService {
     private let defaults = UserDefaults.standard
@@ -99,5 +103,6 @@ final class StorageService {
         defaults.removeObject(forKey: Keys.updateMode)
         defaults.removeObject(forKey: Keys.serverUrl)
         defaults.removeObject(forKey: Keys.isTracking)
+        NotificationCenter.default.post(name: .pingclawSessionInvalidated, object: nil)
     }
 }
