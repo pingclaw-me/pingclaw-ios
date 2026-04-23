@@ -313,9 +313,6 @@ struct ContentView: View {
                     .foregroundStyle(activityInfo.isRecent ? Color.moss : Color.inkFaint)
             }
 
-            Text("\u{203A}")
-                .font(.custom("Fraunces", size: 15))
-                .foregroundStyle(Color.inkGhost)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

@@ -169,6 +169,78 @@
       "scale": "2x"
     },
     {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "20x20",
+      "idiom": "ipad",
+      "filename": "AppIcon-20-dark.png",
+      "scale": "1x"
+    },
+    {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "20x20",
+      "idiom": "ipad",
+      "filename": "AppIcon-20@2x-dark.png",
+      "scale": "2x"
+    },
+    {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "29x29",
+      "idiom": "ipad",
+      "filename": "AppIcon-29-dark.png",
+      "scale": "1x"
+    },
+    {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "29x29",
+      "idiom": "ipad",
+      "filename": "AppIcon-29@2x-dark.png",
+      "scale": "2x"
+    },
+    {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "40x40",
+      "idiom": "ipad",
+      "filename": "AppIcon-40@2x-dark.png",
+      "scale": "2x"
+    },
+    {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "76x76",
+      "idiom": "ipad",
+      "filename": "AppIcon-76-dark.png",
+      "scale": "1x"
+    },
+    {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "76x76",
+      "idiom": "ipad",
+      "filename": "AppIcon-76@2x-dark.png",
+      "scale": "2x"
+    },
+    {
+      "appearances": [
+        { "appearance": "luminosity", "value": "dark" }
+      ],
+      "size": "83.5x83.5",
+      "idiom": "ipad",
+      "filename": "AppIcon-83.5@2x-dark.png",
+      "scale": "2x"
+    },
+    {
       "size": "1024x1024",
       "idiom": "ios-marketing",
       "filename": "AppIcon-1024.png",
