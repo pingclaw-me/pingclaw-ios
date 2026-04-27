@@ -94,6 +94,8 @@ struct PrivacySettingsView: View {
                     .font(Typography.caption(11))
                     .foregroundStyle(Color.rust)
             }
+            .accessibilityLabel("Change permissions in iOS Settings")
+            .accessibilityHint("Opens the system settings for PingClaw")
             .padding(.top, 8)
             #endif
         }
@@ -115,6 +117,8 @@ struct PrivacySettingsView: View {
                 .foregroundStyle(granted ? Color.moss : Color.inkFaint)
         }
         .padding(.vertical, 9)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(granted ? "granted" : "not granted")")
     }
 
     private var dottedDivider: some View {
@@ -137,7 +141,9 @@ struct PrivacySettingsView: View {
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: String] {
                 markdown = json["content"]
             }
-        } catch {}
+        } catch {
+            markdown = "Could not load privacy policy. Please try again later."
+        }
         loading = false
     }
 }

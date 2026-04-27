@@ -47,9 +47,18 @@ struct ContentView: View {
         }
         .alert("Background Location", isPresented: $locationManager.showLocationPermissionPrompt) {
             Button("Continue") { locationManager.confirmLocationPermission() }
-            Button("Not Now", role: .cancel) {}
         } message: {
             Text("PingClaw needs \"Always\" location access to keep sharing your position while the app is in the background. You can change this any time in Settings.")
+        }
+        .alert("Location Permission Required", isPresented: $locationManager.showLocationDeniedPrompt) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Location access was denied. To enable sharing, open Settings and allow location access for PingClaw.")
         }
         .task {
             if storage.getPairingToken() != nil {
@@ -384,7 +393,13 @@ struct ContentView: View {
                 if let url = URL(string: "\(baseURL)?webcode=\(code)") {
                     await UIApplication.shared.open(url)
                 }
-            } catch {}
+            } catch {
+                // Web code generation failed — open the dashboard without auto-login.
+                let baseURL = storage.serverUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                if let url = URL(string: baseURL) {
+                    await UIApplication.shared.open(url)
+                }
+            }
         }
     }
 

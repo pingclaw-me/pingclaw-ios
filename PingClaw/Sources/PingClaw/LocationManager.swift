@@ -55,6 +55,7 @@ final class LocationManager: NSObject {
     var lastAccuracyMetres: Double = 0
     var updateMode: UpdateMode = .adaptive
     var showLocationPermissionPrompt = false
+    var showLocationDeniedPrompt = false
 
     private let clManager = CLLocationManager()
     private let apiService: APIService
@@ -93,7 +94,7 @@ final class LocationManager: NSObject {
         }
 
         if status == .denied || status == .restricted {
-            connection = .error("Location permission denied")
+            showLocationDeniedPrompt = true
             storage.isTracking = false
             return
         }

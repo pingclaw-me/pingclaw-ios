@@ -9,7 +9,7 @@
 	<key>CFBundleName</key>
 	<string>PingClaw</string>
 	<key>CFBundleVersion</key>
-	<string>8</string>
+	<string>14</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.0</string>
 	<key>CFBundleExecutable</key>

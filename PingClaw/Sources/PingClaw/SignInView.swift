@@ -202,7 +202,7 @@ struct SignInView: View {
         let codeVerifier = generateCodeVerifier()
         let codeChallenge = sha256Base64URL(codeVerifier)
 
-        var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        guard var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth") else { return }
         components.queryItems = [
             .init(name: "client_id", value: clientID),
             .init(name: "redirect_uri", value: redirectURI),
@@ -252,7 +252,8 @@ struct SignInView: View {
                     .joined(separator: "&")
                     .data(using: .utf8)!
 
-                var request = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
+                guard let tokenURL = URL(string: "https://oauth2.googleapis.com/token") else { return }
+                var request = URLRequest(url: tokenURL)
                 request.httpMethod = "POST"
                 request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
                 request.httpBody = bodyData

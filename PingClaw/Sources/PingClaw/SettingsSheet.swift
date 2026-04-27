@@ -73,6 +73,8 @@ struct SettingsSheet: View {
                             }
                             #endif
                         }
+                        .accessibilityLabel("Open PingClaw GPT")
+                        .accessibilityHint("Opens ChatGPT with the PingClaw GPT")
                         RowDivider()
                         SettingsRow(
                             title: "Open dashboard on this phone",
@@ -81,6 +83,8 @@ struct SettingsSheet: View {
                         ) {
                             openDashboard()
                         }
+                        .accessibilityLabel("Open dashboard")
+                        .accessibilityHint("Opens the PingClaw web dashboard in Safari")
                         RowDivider()
                         SettingsRow(
                             title: "Get a sign-in code for a computer",
@@ -89,6 +93,8 @@ struct SettingsSheet: View {
                         ) {
                             showPairingCode = true
                         }
+                        .accessibilityLabel("Get sign-in code")
+                        .accessibilityHint("Generates a code to sign in on your computer")
                     }
                     .padding(.horizontal, Spacing.screenH)
 
@@ -104,6 +110,8 @@ struct SettingsSheet: View {
                         ) {
                             showPrivacy = true
                         }
+                        .accessibilityLabel("Privacy settings")
+                        .accessibilityHint("Review privacy policy and location permissions")
                         RowDivider()
                         SettingsRow(
                             title: "Terms of service",
@@ -112,6 +120,8 @@ struct SettingsSheet: View {
                         ) {
                             showTerms = true
                         }
+                        .accessibilityLabel("Terms of service")
+                        .accessibilityHint("Review the terms and conditions")
                         RowDivider()
                         SettingsRow(
                             title: "Sign out",
@@ -120,6 +130,8 @@ struct SettingsSheet: View {
                         ) {
                             showSignOutConfirm = true
                         }
+                        .accessibilityLabel("Sign out")
+                        .accessibilityHint("Clears credentials from this device")
                         RowDivider()
                         SettingsRow(
                             title: "Delete all data",
@@ -128,6 +140,8 @@ struct SettingsSheet: View {
                         ) {
                             showDeleteConfirm = true
                         }
+                        .accessibilityLabel("Delete all data")
+                        .accessibilityHint("Permanently deletes your account and data")
                     }
                     .padding(.horizontal, Spacing.screenH)
 
@@ -143,6 +157,8 @@ struct SettingsSheet: View {
                         ) {
                             showServerUrl = true
                         }
+                        .accessibilityLabel("Server URL")
+                        .accessibilityHint("Configure the server this app connects to")
                     }
                     .padding(.horizontal, Spacing.screenH)
 
@@ -222,7 +238,14 @@ struct SettingsSheet: View {
                     await UIApplication.shared.open(url)
                     #endif
                 }
-            } catch {}
+            } catch {
+                let baseURL = storage.serverUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                if let url = URL(string: baseURL) {
+                    #if os(iOS)
+                    await UIApplication.shared.open(url)
+                    #endif
+                }
+            }
         }
     }
 
@@ -283,6 +306,8 @@ struct ServerURLView: View {
                         placeholder: "https://pingclaw.me",
                         hint: "Default: https://pingclaw.me"
                     )
+                    .accessibilityLabel("Server URL")
+                    .accessibilityHint("Enter the URL of your PingClaw server")
                     .padding(.horizontal, Spacing.screenH)
                     .padding(.bottom, 24)
                     .onChange(of: serverUrl) { _, newValue in

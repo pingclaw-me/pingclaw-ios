@@ -53,6 +53,8 @@ struct PairingCodeView: View {
                             generateCode()
                         }
                         .disabled(loading)
+                        .accessibilityLabel("Generate sign-in code")
+                        .accessibilityHint("Creates an 8-character code for signing in on a computer")
                     }
                     .padding(.horizontal, Spacing.screenH)
                     .padding(.bottom, 20)
@@ -78,6 +80,8 @@ struct PairingCodeView: View {
                                 .foregroundStyle(Color.rust)
                                 .padding(.vertical, 20)
                         }
+                        .accessibilityLabel("Regenerate code")
+                        .accessibilityHint("Creates a new sign-in code, replacing the current one")
                     }
                     .frame(maxWidth: .infinity)
                 }

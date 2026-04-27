@@ -48,6 +48,8 @@ struct SelfHostView: View {
                     placeholder: "https://pingclaw.home.arpa",
                     hint: "Reachable from your phone — Tailscale, local network, or public."
                 )
+                .accessibilityLabel("Server URL")
+                .accessibilityHint("Enter your self-hosted PingClaw server address")
                 .padding(.horizontal, Spacing.screenH)
                 .padding(.bottom, 18)
 
@@ -57,6 +59,8 @@ struct SelfHostView: View {
                     placeholder: "pt_...",
                     hint: "Printed once when you start the server with --local."
                 )
+                .accessibilityLabel("Pairing token")
+                .accessibilityHint("Enter the pairing token from your server")
                 .padding(.horizontal, Spacing.screenH)
                 .padding(.bottom, 18)
 
@@ -105,6 +109,7 @@ struct SelfHostView: View {
                     GhostButton(title: "\u{2190} Back to sign-in options") {
                         dismiss()
                     }
+                    .accessibilityLabel("Back to sign-in options")
                 }
                 .padding(.horizontal, Spacing.screenH)
                 .padding(.bottom, 24)
@@ -133,7 +138,12 @@ struct SelfHostView: View {
 
         Task {
             do {
-                var request = URLRequest(url: URL(string: "\(url)/pingclaw/location")!)
+                guard let requestURL = URL(string: "\(url)/pingclaw/location") else {
+                    errorMessage = "Invalid server URL."
+                    isConnecting = false
+                    return
+                }
+                var request = URLRequest(url: requestURL)
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
                 let (_, response) = try await URLSession.shared.data(for: request)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? 0
